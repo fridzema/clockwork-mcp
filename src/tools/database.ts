@@ -90,7 +90,7 @@ export function analyzeSlowQueriesForRequest(
     return [];
   }
 
-  return analyzeSlowQueries(request.databaseQueries, input.threshold);
+  return analyzeSlowQueries(request.databaseQueries, input.threshold ?? 100);
 }
 
 export function detectNPlusOneForRequest(
