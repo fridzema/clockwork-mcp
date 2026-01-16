@@ -52,7 +52,7 @@ describe('Database Tools', () => {
       const result = getQueryStats(testDir, { requestId: 'test-request' });
       expect(result.totalQueries).toBe(4);
       expect(result.totalDuration).toBe(363);
-      expect(result.slowestQuery.duration).toBe(200);
+      expect(result.slowestQuery?.duration).toBe(200);
     });
   });
 

@@ -113,22 +113,22 @@ export const getCommandSchema = z.object({
   requestId: requestIdSchema,
 });
 
-// Export all schema types
-export type ListRequestsInput = z.infer<typeof listRequestsSchema>;
-export type SearchRequestsInput = z.infer<typeof searchRequestsSchema>;
-export type GetQueriesInput = z.infer<typeof getQueriesSchema>;
-export type AnalyzeSlowQueriesInput = z.infer<typeof analyzeSlowQueriesSchema>;
-export type DetectNPlusOneInput = z.infer<typeof detectNPlusOneSchema>;
-export type GetQueryStatsInput = z.infer<typeof getQueryStatsSchema>;
-export type GetPerformanceSummaryInput = z.infer<typeof getPerformanceSummarySchema>;
-export type GetTimelineInput = z.infer<typeof getTimelineSchema>;
-export type CompareRequestsInput = z.infer<typeof compareRequestsSchema>;
-export type GetCacheOperationsInput = z.infer<typeof getCacheOperationsSchema>;
-export type GetCacheStatsInput = z.infer<typeof getCacheStatsSchema>;
-export type GetRedisCommandsInput = z.infer<typeof getRedisCommandsSchema>;
-export type GetLogsInput = z.infer<typeof getLogsSchema>;
-export type GetEventsInput = z.infer<typeof getEventsSchema>;
-export type GetViewsInput = z.infer<typeof getViewsSchema>;
-export type GetHttpRequestsInput = z.infer<typeof getHttpRequestsSchema>;
-export type ListCommandsInput = z.infer<typeof listCommandsSchema>;
-export type GetCommandInput = z.infer<typeof getCommandSchema>;
+// Export all schema types - use z.input to get the input type (with optional defaults)
+export type ListRequestsInput = z.input<typeof listRequestsSchema>;
+export type SearchRequestsInput = z.input<typeof searchRequestsSchema>;
+export type GetQueriesInput = z.input<typeof getQueriesSchema>;
+export type AnalyzeSlowQueriesInput = z.input<typeof analyzeSlowQueriesSchema>;
+export type DetectNPlusOneInput = z.input<typeof detectNPlusOneSchema>;
+export type GetQueryStatsInput = z.input<typeof getQueryStatsSchema>;
+export type GetPerformanceSummaryInput = z.input<typeof getPerformanceSummarySchema>;
+export type GetTimelineInput = z.input<typeof getTimelineSchema>;
+export type CompareRequestsInput = z.input<typeof compareRequestsSchema>;
+export type GetCacheOperationsInput = z.input<typeof getCacheOperationsSchema>;
+export type GetCacheStatsInput = z.input<typeof getCacheStatsSchema>;
+export type GetRedisCommandsInput = z.input<typeof getRedisCommandsSchema>;
+export type GetLogsInput = z.input<typeof getLogsSchema>;
+export type GetEventsInput = z.input<typeof getEventsSchema>;
+export type GetViewsInput = z.input<typeof getViewsSchema>;
+export type GetHttpRequestsInput = z.input<typeof getHttpRequestsSchema>;
+export type ListCommandsInput = z.input<typeof listCommandsSchema>;
+export type GetCommandInput = z.input<typeof getCommandSchema>;
