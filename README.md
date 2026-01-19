@@ -65,6 +65,59 @@ Or use the slash commands:
 - `/clockwork:slow`
 - `/clockwork:n+1`
 
+## Usage Examples
+
+### Debugging a Slow Endpoint
+
+```
+You: "The /api/orders endpoint is slow, can you analyze it?"
+```
+
+Claude will use the MCP tools to:
+1. Find the latest request to `/api/orders`
+2. Analyze query performance
+3. Detect N+1 patterns
+4. Suggest fixes like eager loading or caching
+
+### Investigating a 500 Error
+
+```
+You: "I just got a 500 error on the checkout page, what happened?"
+```
+
+Claude will:
+1. Find the latest failed request
+2. Show error logs and exception details
+3. Identify the problematic code path
+
+### Optimizing Database Queries
+
+```
+You: "Check if there are N+1 issues on the products page"
+```
+
+Claude will:
+1. Analyze recent requests to the products route
+2. Detect repeated query patterns
+3. Suggest eager loading with `->with('relation')`
+
+### More Natural Language Examples
+
+**Performance:**
+- "Compare the last two requests to /api/users"
+- "Which queries are taking the longest?"
+- "Show me the cache hit ratio"
+
+**Debugging:**
+- "What middleware ran on the last request?"
+- "Show me all log entries with errors"
+- "List the events that were dispatched"
+
+**Analysis:**
+- "Give me a performance summary of the latest request"
+- "Show the full request timeline"
+- "What views were rendered?"
+
 ## Tools
 
 ### Request Discovery
