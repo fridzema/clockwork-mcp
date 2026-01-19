@@ -13,15 +13,21 @@ This MCP server gives Claude Code access to your Laravel application's Clockwork
 - **Performance analysis** - Track response times, query counts, memory usage
 - **Development insight** - Understand request flow, see runtime behavior
 
-## Quick Start
+## Installation
 
-### 1. Install Clockwork in your Laravel app
+### Option 1: Claude Code Plugin (Recommended)
 
-```bash
-composer require itsgoingd/clockwork
+```
+/plugin install github:fridzema/clockwork-mcp
 ```
 
-### 2. Configure Claude Code
+This installs the MCP server and adds convenience commands:
+- `/clockwork:status` - Check storage status
+- `/clockwork:latest` - Show latest request summary
+- `/clockwork:slow` - Find slow queries
+- `/clockwork:n+1` - Detect N+1 patterns
+
+### Option 2: Manual MCP Configuration
 
 Add to your Claude Code MCP settings:
 
@@ -36,7 +42,15 @@ Add to your Claude Code MCP settings:
 }
 ```
 
-### 3. Start debugging
+## Quick Start
+
+### 1. Install Clockwork in your Laravel app
+
+```bash
+composer require itsgoingd/clockwork
+```
+
+### 2. Start debugging
 
 Ask Claude to analyze your requests:
 
@@ -44,6 +58,12 @@ Ask Claude to analyze your requests:
 - "Find slow queries in the last request"
 - "Check for N+1 query problems"
 - "Compare this request with the previous one"
+
+Or use the slash commands:
+- `/clockwork:status`
+- `/clockwork:latest`
+- `/clockwork:slow`
+- `/clockwork:n+1`
 
 ## Tools
 

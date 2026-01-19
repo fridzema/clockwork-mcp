@@ -1,0 +1,10 @@
+{
+  "name": "clockwork",
+  "description": "Debug Laravel apps with Clockwork - N+1 detection, slow queries, performance analysis",
+  "version": "0.1.0",
+  "author": {
+    "name": "Robert Fridzema"
+  },
+  "repository": "https://github.com/fridzema/clockwork-mcp",
+  "license": "MIT"
+}
