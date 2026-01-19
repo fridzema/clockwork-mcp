@@ -24,17 +24,21 @@
     "claude",
     "ai"
   ],
-  "author": "",
+  "author": "Robert Fridzema",
   "license": "MIT",
+  "homepage": "https://github.com/fridzema/clockwork-mcp#readme",
   "engines": {
     "node": ">=18"
   },
   "files": [
-    "dist"
+    "dist",
+    ".claude-plugin",
+    ".mcp.json",
+    "commands"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/clockwork-mcp.git"
+    "url": "git+https://github.com/fridzema/clockwork-mcp.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",

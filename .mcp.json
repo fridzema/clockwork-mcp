@@ -1,0 +1,6 @@
+{
+  "clockwork": {
+    "command": "npx",
+    "args": ["-y", "clockwork-mcp"]
+  }
+}
