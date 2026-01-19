@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "clockwork-mcp-marketplace",
+  "version": "1.0.0",
+  "description": "Laravel Clockwork debugging plugin for Claude Code",
+  "owner": {
+    "name": "Robert Fridzema",
+    "email": "robert@fridzema.com"
+  },
+  "plugins": [
+    {
+      "name": "clockwork",
+      "description": "Debug Laravel apps with Clockwork - N+1 detection, slow queries, performance analysis",
+      "source": ".",
+      "category": "development",
+      "version": "0.1.1",
+      "author": {
+        "name": "Robert Fridzema"
+      }
+    }
+  ]
+}
