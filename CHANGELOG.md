@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-01-20
+
+### Added
+- Multi-request analysis support for all analysis commands
+  - New scope parameters: `count`, `since`, `all`, `uri`, `requestId`
+  - Time duration parsing: `30m`, `1h`, `2d`, `1w`
+  - Results aggregated by query pattern across multiple requests
+  - Max 100 HTTP requests per analysis (artisan commands excluded from limit)
+- `/clockwork:slow` now supports analyzing multiple requests with pattern grouping
+- `/clockwork:n+1` now supports analyzing multiple requests with pattern grouping
+- New utility functions: `parseTimeDuration()`, `filterRequestsByScope()`
+
+### Changed
+- `analyze_slow_queries` returns aggregated results with summary statistics
+- `detect_n_plus_one` returns aggregated results with summary statistics
+- Both tools now show affected requests for each pattern
+
 ## [0.2.4] - 2026-01-20
 
 ### Fixed

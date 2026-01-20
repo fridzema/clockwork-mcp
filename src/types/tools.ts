@@ -8,6 +8,18 @@ export const timeRangeSchema = z.object({
   to: z.number().optional().describe('Unix timestamp end'),
 });
 
+// Request scope schema for multi-request analysis
+export const requestScopeSchema = z.object({
+  requestId: requestIdSchema.optional().describe('Specific request ID (highest priority)'),
+  count: z.number().optional().describe('Number of recent HTTP requests to analyze'),
+  since: z
+    .string()
+    .optional()
+    .describe('Time duration to look back (e.g., "30m", "1h", "2d", "1w")'),
+  all: z.boolean().optional().describe('Analyze all available requests (max 100)'),
+  uri: z.string().optional().describe('Filter by URI pattern (substring match)'),
+});
+
 export const paginationSchema = z.object({
   limit: z.number().default(20).describe('Max results to return'),
   offset: z.number().default(0).describe('Number of results to skip'),
@@ -40,15 +52,13 @@ export const getQueriesSchema = z.object({
 });
 
 export const analyzeSlowQueriesSchema = z.object({
-  requestId: requestIdSchema
-    .optional()
-    .describe('Analyze specific request, or all recent if omitted'),
+  ...requestScopeSchema.shape,
   threshold: z.number().default(100).describe('Slow query threshold in ms'),
   limit: z.number().default(20).describe('Max queries to return'),
 });
 
 export const detectNPlusOneSchema = z.object({
-  requestId: requestIdSchema,
+  ...requestScopeSchema.shape,
   threshold: z.number().default(2).describe('Min repetitions to flag as N+1'),
 });
 
@@ -118,6 +128,7 @@ export const getCommandSchema = z.object({
 });
 
 // Export all schema types - use z.input to get the input type (with optional defaults)
+export type RequestScopeInput = z.input<typeof requestScopeSchema>;
 export type ListRequestsInput = z.input<typeof listRequestsSchema>;
 export type SearchRequestsInput = z.input<typeof searchRequestsSchema>;
 export type GetQueriesInput = z.input<typeof getQueriesSchema>;

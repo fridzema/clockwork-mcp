@@ -1,7 +1,7 @@
 {
   "name": "clockwork",
   "description": "Debug Laravel apps with Clockwork - N+1 detection, slow queries, performance analysis",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "author": {
     "name": "Robert Fridzema"
   },
