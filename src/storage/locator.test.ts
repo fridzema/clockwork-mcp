@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { findStoragePath, isLaravelProject } from './locator.js';
+import { findStoragePath, findProjectPath, isLaravelProject } from './locator.js';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -52,6 +52,43 @@ describe('Storage Locator', () => {
 
     it('returns null when no storage found', () => {
       const result = findStoragePath({}, testDir);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('findProjectPath', () => {
+    it('returns project path from CLOCKWORK_PROJECT_PATH env var', () => {
+      const laravelDir = join(testDir, 'laravel');
+      mkdirSync(laravelDir, { recursive: true });
+      writeFileSync(join(laravelDir, 'artisan'), '<?php');
+
+      const result = findProjectPath({ CLOCKWORK_PROJECT_PATH: laravelDir });
+
+      expect(result).toBe(laravelDir);
+    });
+
+    it('finds Laravel project by traversing up from cwd', () => {
+      const laravelDir = join(testDir, 'laravel');
+      const deepDir = join(laravelDir, 'app', 'Http');
+      mkdirSync(deepDir, { recursive: true });
+      writeFileSync(join(laravelDir, 'artisan'), '<?php');
+
+      const result = findProjectPath({}, deepDir);
+
+      expect(result).toBe(laravelDir);
+    });
+
+    it('returns null when no Laravel project found', () => {
+      const result = findProjectPath({}, testDir);
+
+      expect(result).toBeNull();
+    });
+
+    it('returns null when env path is not a Laravel project', () => {
+      mkdirSync(join(testDir, 'not-laravel'), { recursive: true });
+
+      const result = findProjectPath({ CLOCKWORK_PROJECT_PATH: join(testDir, 'not-laravel') });
+
       expect(result).toBeNull();
     });
   });
