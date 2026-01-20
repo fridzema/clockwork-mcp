@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executePhp, getRequestViaArtisan, getLatestRequestViaArtisan } from './artisan.js';
+import { executePhp, getRequestViaArtisan, getLatestRequestViaArtisan, listRequestsViaArtisan } from './artisan.js';
 import { execSync } from 'child_process';
 
 vi.mock('child_process');
@@ -135,6 +135,36 @@ describe('Clockwork Storage Functions', () => {
       const result = getLatestRequestViaArtisan('/path/to/laravel');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('listRequestsViaArtisan', () => {
+    it('fetches all requests as index entries', () => {
+      const mockExecSync = vi.mocked(execSync);
+      const mockRequests = [
+        { id: 'req1', type: 'request', time: 1705312999, method: 'GET', uri: '/api/users', responseStatus: 200, responseDuration: 45.5 },
+        { id: 'req2', type: 'command', time: 1705312000, commandName: 'migrate' },
+      ];
+      mockExecSync.mockReturnValue(JSON.stringify(mockRequests));
+
+      const result = listRequestsViaArtisan('/path/to/laravel');
+
+      expect(mockExecSync).toHaveBeenCalledWith(
+        expect.stringContaining('all'),
+        expect.any(Object)
+      );
+      expect(result).toHaveLength(2);
+      expect(result[0].id).toBe('req1');
+      expect(result[1].commandName).toBe('migrate');
+    });
+
+    it('returns empty array when no requests exist', () => {
+      const mockExecSync = vi.mocked(execSync);
+      mockExecSync.mockReturnValue('[]');
+
+      const result = listRequestsViaArtisan('/path/to/laravel');
+
+      expect(result).toEqual([]);
     });
   });
 });

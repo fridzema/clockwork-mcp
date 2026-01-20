@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import type { ClockworkRequest } from '../types/clockwork.js';
+import type { ClockworkRequest, IndexEntry } from '../types/clockwork.js';
 
 export interface ArtisanOptions {
   phpPath?: string;
@@ -94,4 +94,34 @@ export function getLatestRequestViaArtisan(
 ): ClockworkRequest | null {
   const phpCode = `echo json_encode(app('clockwork')->storage()->latest()?->toArray());`;
   return executePhp<ClockworkRequest | null>(projectPath, phpCode, options);
+}
+
+/**
+ * Lists all Clockwork requests via artisan tinker.
+ * Returns lightweight index entries extracted from full request data.
+ * @param projectPath - Path to Laravel project root
+ * @param options - Execution options
+ * @returns Array of index entries sorted by time (most recent first)
+ */
+export function listRequestsViaArtisan(
+  projectPath: string,
+  options: ArtisanOptions = {}
+): IndexEntry[] {
+  const phpCode = `echo json_encode(array_map(fn($r) => $r->toArray(), app('clockwork')->storage()->all()));`;
+  const requests = executePhp<ClockworkRequest[]>(projectPath, phpCode, options) ?? [];
+
+  // Map full requests to lightweight index entries
+  return requests
+    .map((r) => ({
+      id: r.id,
+      time: r.time,
+      type: r.type,
+      method: r.method,
+      uri: r.uri,
+      controller: r.controller,
+      responseStatus: r.responseStatus,
+      responseDuration: r.responseDuration,
+      commandName: r.commandName,
+    }))
+    .sort((a, b) => b.time - a.time);
 }
