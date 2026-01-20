@@ -1,6 +1,6 @@
 {
   "name": "clockwork-mcp",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "MCP server for Laravel Clockwork - debug Laravel apps with Claude Code",
   "type": "module",
   "main": "dist/index.js",
@@ -14,6 +14,8 @@
     "test:run": "vitest run",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -40,6 +42,12 @@
     "type": "git",
     "url": "git+https://github.com/fridzema/clockwork-mcp.git"
   },
+  "bugs": {
+    "url": "https://github.com/fridzema/clockwork-mcp/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
     "zod": "^4.3.5"
@@ -53,6 +61,8 @@
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "prettier": "^3.5.3"
   }
 }
