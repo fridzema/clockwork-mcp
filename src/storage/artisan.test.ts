@@ -139,7 +139,7 @@ describe('Clockwork Storage Functions', () => {
   });
 
   describe('listRequestsViaArtisan', () => {
-    it('fetches all requests as index entries', () => {
+    it('fetches recent requests using previous() to avoid OOM on SQL storage', () => {
       const mockExecSync = vi.mocked(execSync);
       const mockRequests = [
         { id: 'req1', type: 'request', time: 1705312999, method: 'GET', uri: '/api/users', responseStatus: 200, responseDuration: 45.5 },
@@ -149,8 +149,9 @@ describe('Clockwork Storage Functions', () => {
 
       const result = listRequestsViaArtisan('/path/to/laravel');
 
+      // Uses previous() instead of all() to avoid loading all requests into memory
       expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining('all'),
+        expect.stringContaining('previous'),
         expect.any(Object)
       );
       expect(result).toHaveLength(2);

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.4] - 2026-01-20
+
+### Fixed
+- SQL storage memory exhaustion: Use `previous()` instead of `all()` to avoid loading all requests into memory
+  - Clockwork's `SqlStorage::all()` doesn't support pagination, causing OOM on large datasets
+  - Now uses `latest()` + `previous()` which properly uses SQL LIMIT
+
 ## [0.2.3] - 2026-01-20
 
 ### Fixed
