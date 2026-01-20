@@ -1,6 +1,10 @@
-import { readRequest } from '../storage/reader.js';
+import type { Storage } from '../storage/storage.js';
 import type { CacheQuery, RedisCommand } from '../types/clockwork.js';
-import type { GetCacheOperationsInput, GetCacheStatsInput, GetRedisCommandsInput } from '../types/tools.js';
+import type {
+  GetCacheOperationsInput,
+  GetCacheStatsInput,
+  GetRedisCommandsInput,
+} from '../types/tools.js';
 
 export interface CacheStats {
   hits: number;
@@ -12,8 +16,17 @@ export interface CacheStats {
   totalDuration: number;
 }
 
-export function getCacheOperations(storagePath: string, input: GetCacheOperationsInput): CacheQuery[] {
-  const request = readRequest(storagePath, input.requestId);
+/**
+ * Gets cache operations (hits, misses, writes) for a request.
+ * @param storage - Storage interface
+ * @param input - Request ID
+ * @returns Array of cache operations
+ */
+export function getCacheOperations(
+  storage: Storage,
+  input: GetCacheOperationsInput
+): CacheQuery[] {
+  const request = storage.find(input.requestId);
 
   if (!request?.cacheQueries) {
     return [];
@@ -22,7 +35,13 @@ export function getCacheOperations(storagePath: string, input: GetCacheOperation
   return request.cacheQueries;
 }
 
-export function getCacheStats(storagePath: string, input: GetCacheStatsInput): CacheStats {
+/**
+ * Gets aggregate cache statistics for a request.
+ * @param storage - Storage interface
+ * @param input - Request ID
+ * @returns Cache stats including hit ratio and operation counts
+ */
+export function getCacheStats(storage: Storage, input: GetCacheStatsInput): CacheStats {
   const defaultStats: CacheStats = {
     hits: 0,
     misses: 0,
@@ -37,22 +56,34 @@ export function getCacheStats(storagePath: string, input: GetCacheStatsInput): C
     return defaultStats;
   }
 
-  const request = readRequest(storagePath, input.requestId);
+  const request = storage.find(input.requestId);
 
   if (!request?.cacheQueries || request.cacheQueries.length === 0) {
     return defaultStats;
   }
 
   const queries = request.cacheQueries;
-  let hits = 0, misses = 0, writes = 0, deletes = 0, totalDuration = 0;
+  let hits = 0,
+    misses = 0,
+    writes = 0,
+    deletes = 0,
+    totalDuration = 0;
 
   for (const q of queries) {
     totalDuration += q.duration ?? 0;
     switch (q.type) {
-      case 'hit': hits++; break;
-      case 'miss': misses++; break;
-      case 'write': writes++; break;
-      case 'delete': deletes++; break;
+      case 'hit':
+        hits++;
+        break;
+      case 'miss':
+        misses++;
+        break;
+      case 'write':
+        writes++;
+        break;
+      case 'delete':
+        deletes++;
+        break;
     }
   }
 
@@ -69,8 +100,17 @@ export function getCacheStats(storagePath: string, input: GetCacheStatsInput): C
   };
 }
 
-export function getRedisCommands(storagePath: string, input: GetRedisCommandsInput): RedisCommand[] {
-  const request = readRequest(storagePath, input.requestId);
+/**
+ * Gets Redis commands executed during a request.
+ * @param storage - Storage interface
+ * @param input - Request ID
+ * @returns Array of Redis commands
+ */
+export function getRedisCommands(
+  storage: Storage,
+  input: GetRedisCommandsInput
+): RedisCommand[] {
+  const request = storage.find(input.requestId);
 
   if (!request?.redisCommands) {
     return [];

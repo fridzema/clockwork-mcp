@@ -1,11 +1,27 @@
-import { readRequest } from '../storage/reader.js';
-import type { LogEntry, DispatchedEvent, RenderedView, OutgoingHttpRequest } from '../types/clockwork.js';
-import type { GetLogsInput, GetEventsInput, GetViewsInput, GetHttpRequestsInput } from '../types/tools.js';
+import type { Storage } from '../storage/storage.js';
+import type {
+  LogEntry,
+  DispatchedEvent,
+  RenderedView,
+  OutgoingHttpRequest,
+} from '../types/clockwork.js';
+import type {
+  GetLogsInput,
+  GetEventsInput,
+  GetViewsInput,
+  GetHttpRequestsInput,
+} from '../types/tools.js';
 
 const LOG_LEVELS = ['debug', 'info', 'warning', 'error'] as const;
 
-export function getLogs(storagePath: string, input: GetLogsInput): LogEntry[] {
-  const request = readRequest(storagePath, input.requestId);
+/**
+ * Gets log entries for a request with optional level filtering.
+ * @param storage - Storage interface
+ * @param input - Request ID and optional minimum log level
+ * @returns Array of log entries
+ */
+export function getLogs(storage: Storage, input: GetLogsInput): LogEntry[] {
+  const request = storage.find(input.requestId);
 
   if (!request?.log) {
     return [];
@@ -15,8 +31,8 @@ export function getLogs(storagePath: string, input: GetLogsInput): LogEntry[] {
 
   if (input.level) {
     const minLevelIndex = LOG_LEVELS.indexOf(input.level);
-    logs = logs.filter(l => {
-      const logLevelIndex = LOG_LEVELS.indexOf(l.level as typeof LOG_LEVELS[number]);
+    logs = logs.filter((l) => {
+      const logLevelIndex = LOG_LEVELS.indexOf(l.level as (typeof LOG_LEVELS)[number]);
       return logLevelIndex >= minLevelIndex;
     });
   }
@@ -24,8 +40,14 @@ export function getLogs(storagePath: string, input: GetLogsInput): LogEntry[] {
   return logs;
 }
 
-export function getEvents(storagePath: string, input: GetEventsInput): DispatchedEvent[] {
-  const request = readRequest(storagePath, input.requestId);
+/**
+ * Gets events dispatched during a request.
+ * @param storage - Storage interface
+ * @param input - Request ID
+ * @returns Array of dispatched events with their listeners
+ */
+export function getEvents(storage: Storage, input: GetEventsInput): DispatchedEvent[] {
+  const request = storage.find(input.requestId);
 
   if (!request?.events) {
     return [];
@@ -34,8 +56,14 @@ export function getEvents(storagePath: string, input: GetEventsInput): Dispatche
   return request.events;
 }
 
-export function getViews(storagePath: string, input: GetViewsInput): RenderedView[] {
-  const request = readRequest(storagePath, input.requestId);
+/**
+ * Gets views rendered during a request.
+ * @param storage - Storage interface
+ * @param input - Request ID
+ * @returns Array of rendered views with their data
+ */
+export function getViews(storage: Storage, input: GetViewsInput): RenderedView[] {
+  const request = storage.find(input.requestId);
 
   // Clockwork stores views in either 'views' or 'viewsData'
   const views = request?.views ?? request?.viewsData;
@@ -47,8 +75,17 @@ export function getViews(storagePath: string, input: GetViewsInput): RenderedVie
   return views;
 }
 
-export function getHttpRequests(storagePath: string, input: GetHttpRequestsInput): OutgoingHttpRequest[] {
-  const request = readRequest(storagePath, input.requestId);
+/**
+ * Gets outgoing HTTP requests made during a request.
+ * @param storage - Storage interface
+ * @param input - Request ID
+ * @returns Array of outgoing HTTP requests
+ */
+export function getHttpRequests(
+  storage: Storage,
+  input: GetHttpRequestsInput
+): OutgoingHttpRequest[] {
+  const request = storage.find(input.requestId);
 
   if (!request?.httpRequests) {
     return [];

@@ -1,7 +1,6 @@
 import { existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
-import { parseIndex } from '../storage/index-parser.js';
-import { readRequest } from '../storage/reader.js';
+import type { Storage } from '../storage/storage.js';
 
 export interface ClockworkStatus {
   found: boolean;
@@ -25,7 +24,13 @@ export interface RequestFlowSummary {
   memoryMB?: number;
 }
 
-export function getClockworkStatus(storagePath: string): ClockworkStatus {
+/**
+ * Gets Clockwork storage status and statistics.
+ * @param storage - Storage interface
+ * @param storagePath - Path to Clockwork storage directory (for size calculation)
+ * @returns Status including request count, time range, and storage size
+ */
+export function getClockworkStatus(storage: Storage, storagePath: string): ClockworkStatus {
   if (!existsSync(storagePath)) {
     return {
       found: false,
@@ -34,7 +39,7 @@ export function getClockworkStatus(storagePath: string): ClockworkStatus {
     };
   }
 
-  const entries = parseIndex(storagePath);
+  const entries = storage.list();
 
   let storageSizeBytes = 0;
   try {
@@ -57,8 +62,14 @@ export function getClockworkStatus(storagePath: string): ClockworkStatus {
   };
 }
 
-export function explainRequestFlow(storagePath: string, requestId: string): RequestFlowSummary {
-  const request = readRequest(storagePath, requestId);
+/**
+ * Generates a high-level summary of what happened in a request.
+ * @param storage - Storage interface
+ * @param requestId - Clockwork request ID
+ * @returns Summary including route, controller, queries, and status
+ */
+export function explainRequestFlow(storage: Storage, requestId: string): RequestFlowSummary {
+  const request = storage.find(requestId);
 
   if (!request) {
     return {
