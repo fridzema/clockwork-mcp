@@ -125,3 +125,26 @@ export function listRequestsViaArtisan(
     }))
     .sort((a, b) => b.time - a.time);
 }
+
+/**
+ * Fetches multiple Clockwork requests by ID in a single PHP call.
+ * @param projectPath - Path to Laravel project root
+ * @param requestIds - Array of request IDs to fetch
+ * @param options - Execution options
+ * @returns Array of requests (excludes not found)
+ */
+export function getRequestsViaArtisan(
+  projectPath: string,
+  requestIds: string[],
+  options: ArtisanOptions = {}
+): ClockworkRequest[] {
+  if (requestIds.length === 0) {
+    return [];
+  }
+
+  const idsJson = JSON.stringify(requestIds);
+  const phpCode = `echo json_encode(array_map(fn($id) => app('clockwork')->storage()->find($id)?->toArray(), json_decode('${idsJson}')));`;
+  const results = executePhp<(ClockworkRequest | null)[]>(projectPath, phpCode, options) ?? [];
+
+  return results.filter((r): r is ClockworkRequest => r !== null);
+}
