@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import type { ClockworkRequest } from '../types/clockwork.js';
 
 export interface ArtisanOptions {
   phpPath?: string;
@@ -63,4 +64,20 @@ export function executePhp<T = unknown>(
   }
 
   return JSON.parse(jsonLine) as T;
+}
+
+/**
+ * Fetches a single Clockwork request by ID via artisan tinker.
+ * @param projectPath - Path to Laravel project root
+ * @param requestId - Clockwork request ID
+ * @param options - Execution options
+ * @returns Request data or null if not found
+ */
+export function getRequestViaArtisan(
+  projectPath: string,
+  requestId: string,
+  options: ArtisanOptions = {}
+): ClockworkRequest | null {
+  const phpCode = `echo json_encode(app('clockwork')->storage()->find('${requestId}')?->toArray());`;
+  return executePhp<ClockworkRequest | null>(projectPath, phpCode, options);
 }

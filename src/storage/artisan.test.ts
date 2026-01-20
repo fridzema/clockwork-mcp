@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { executePhp } from './artisan.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { executePhp, getRequestViaArtisan } from './artisan.js';
 import { execSync } from 'child_process';
 
 vi.mock('child_process');
@@ -63,6 +63,47 @@ describe('Artisan Executor', () => {
       expect(() => executePhp('/path/to/laravel', 'echo "not json";')).toThrow(
         'No JSON output'
       );
+    });
+  });
+});
+
+describe('Clockwork Storage Functions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('getRequestViaArtisan', () => {
+    it('fetches a single request by ID', () => {
+      const mockExecSync = vi.mocked(execSync);
+      const mockRequest = {
+        id: 'abc123',
+        type: 'request',
+        time: 1705312345,
+        method: 'GET',
+        uri: '/api/users',
+      };
+      mockExecSync.mockReturnValue(JSON.stringify(mockRequest));
+
+      const result = getRequestViaArtisan('/path/to/laravel', 'abc123');
+
+      expect(mockExecSync).toHaveBeenCalledWith(
+        expect.stringContaining('abc123'),
+        expect.any(Object)
+      );
+      expect(mockExecSync).toHaveBeenCalledWith(
+        expect.stringContaining('find'),
+        expect.any(Object)
+      );
+      expect(result).toEqual(mockRequest);
+    });
+
+    it('returns null when request not found', () => {
+      const mockExecSync = vi.mocked(execSync);
+      mockExecSync.mockReturnValue('null');
+
+      const result = getRequestViaArtisan('/path/to/laravel', 'nonexistent');
+
+      expect(result).toBeNull();
     });
   });
 });
