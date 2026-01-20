@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-01-20
+
+### Added
+- Multi-storage backend support via `php artisan tinker`
+  - File storage (default)
+  - SQLite
+  - MySQL
+  - PostgreSQL
+  - Redis
+- Unified Storage interface for consistent data access
+- Auto-detection of Laravel project and storage driver
+- New environment variables:
+  - `CLOCKWORK_STORAGE_DRIVER` - Force storage driver (`artisan` or `file`)
+  - `CLOCKWORK_PHP_PATH` - Custom PHP binary path
+- Integration tests for artisan storage driver
+
+### Changed
+- All tools now use the unified Storage interface
+- Improved storage auto-detection (prefers artisan driver when Laravel project found)
+
 ## [0.1.1] - 2026-01-16
 
 ### Added
