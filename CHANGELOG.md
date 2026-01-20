@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-01-20
+
+### Fixed
+- Shell escaping issues with multi-line PHP code in artisan commands
+
 ## [0.2.2] - 2026-01-20
 
 ### Fixed

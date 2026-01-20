@@ -110,18 +110,8 @@ export function listRequestsViaArtisan(
   limit: number = 100
 ): IndexEntry[] {
   // Only extract index-level fields to avoid memory exhaustion
-  // Use array_slice to limit results
-  const phpCode = `echo json_encode(array_map(fn($r) => [
-    'id' => $r->id,
-    'time' => $r->time,
-    'type' => $r->type ?? 'request',
-    'method' => $r->method ?? null,
-    'uri' => $r->uri ?? null,
-    'controller' => $r->controller ?? null,
-    'responseStatus' => $r->responseStatus ?? null,
-    'responseDuration' => $r->responseDuration ?? null,
-    'commandName' => $r->commandName ?? null,
-  ], array_slice(app('clockwork')->storage()->all(), -${limit})));`;
+  // Use array_slice to limit results, single line to avoid shell escaping issues
+  const phpCode = `echo json_encode(array_map(fn($r) => ["id" => $r->id, "time" => $r->time, "type" => $r->type ?? "request", "method" => $r->method ?? null, "uri" => $r->uri ?? null, "controller" => $r->controller ?? null, "responseStatus" => $r->responseStatus ?? null, "responseDuration" => $r->responseDuration ?? null, "commandName" => $r->commandName ?? null], array_slice(app("clockwork")->storage()->all(), -${limit})));`;
 
   const entries = executePhp<IndexEntry[]>(projectPath, phpCode, options) ?? [];
 
