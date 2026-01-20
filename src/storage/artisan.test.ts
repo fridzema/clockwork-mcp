@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executePhp, getRequestViaArtisan } from './artisan.js';
+import { executePhp, getRequestViaArtisan, getLatestRequestViaArtisan } from './artisan.js';
 import { execSync } from 'child_process';
 
 vi.mock('child_process');
@@ -102,6 +102,37 @@ describe('Clockwork Storage Functions', () => {
       mockExecSync.mockReturnValue('null');
 
       const result = getRequestViaArtisan('/path/to/laravel', 'nonexistent');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getLatestRequestViaArtisan', () => {
+    it('fetches the most recent request', () => {
+      const mockExecSync = vi.mocked(execSync);
+      const mockRequest = {
+        id: 'latest123',
+        type: 'request',
+        time: 1705312999,
+        method: 'POST',
+        uri: '/api/orders',
+      };
+      mockExecSync.mockReturnValue(JSON.stringify(mockRequest));
+
+      const result = getLatestRequestViaArtisan('/path/to/laravel');
+
+      expect(mockExecSync).toHaveBeenCalledWith(
+        expect.stringContaining('latest'),
+        expect.any(Object)
+      );
+      expect(result).toEqual(mockRequest);
+    });
+
+    it('returns null when no requests exist', () => {
+      const mockExecSync = vi.mocked(execSync);
+      mockExecSync.mockReturnValue('null');
+
+      const result = getLatestRequestViaArtisan('/path/to/laravel');
 
       expect(result).toBeNull();
     });

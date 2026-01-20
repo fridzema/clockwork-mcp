@@ -81,3 +81,17 @@ export function getRequestViaArtisan(
   const phpCode = `echo json_encode(app('clockwork')->storage()->find('${requestId}')?->toArray());`;
   return executePhp<ClockworkRequest | null>(projectPath, phpCode, options);
 }
+
+/**
+ * Fetches the most recent Clockwork request via artisan tinker.
+ * @param projectPath - Path to Laravel project root
+ * @param options - Execution options
+ * @returns Latest request data or null if none exist
+ */
+export function getLatestRequestViaArtisan(
+  projectPath: string,
+  options: ArtisanOptions = {}
+): ClockworkRequest | null {
+  const phpCode = `echo json_encode(app('clockwork')->storage()->latest()?->toArray());`;
+  return executePhp<ClockworkRequest | null>(projectPath, phpCode, options);
+}
