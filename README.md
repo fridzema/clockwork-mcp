@@ -1,6 +1,8 @@
 # clockwork-mcp
 
+[![CI](https://github.com/fridzema/clockwork-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/fridzema/clockwork-mcp/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/clockwork-mcp.svg)](https://www.npmjs.com/package/clockwork-mcp)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 MCP server for Laravel Clockwork - debug Laravel apps with Claude Code.
@@ -172,19 +174,35 @@ Claude will:
 
 ## Configuration
 
+### Storage Backends
+
+By default, Clockwork MCP auto-detects your Laravel project and uses `php artisan tinker` to read Clockwork data. This works with **all** Clockwork storage backends:
+
+- File (default)
+- SQLite
+- MySQL
+- PostgreSQL
+- Redis
+
+When you configure Clockwork to use SQL or Redis storage in your Laravel app (`config/clockwork.php`), the MCP server automatically uses the same storage by running PHP commands through `artisan tinker`. No additional configuration required.
+
 ### Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CLOCKWORK_STORAGE_PATH` | Auto-detect | Path to Clockwork storage |
-| `CLOCKWORK_PROJECT_PATH` | cwd | Laravel project root |
+| `CLOCKWORK_PROJECT_PATH` | Auto-detect | Path to Laravel project root |
+| `CLOCKWORK_STORAGE_DRIVER` | Auto-detect | Force storage driver (`artisan` or `file`) |
+| `CLOCKWORK_PHP_PATH` | `php` | Custom PHP binary path |
+| `CLOCKWORK_STORAGE_PATH` | Auto-detect | Direct path to storage (file driver only) |
 
 ### Auto-detection
 
 The MCP server automatically finds Clockwork storage by:
-1. Checking `CLOCKWORK_STORAGE_PATH` environment variable
-2. Looking for `storage/clockwork/` in current directory
-3. Traversing up to find a Laravel project (has `artisan` file)
+1. Checking `CLOCKWORK_PROJECT_PATH` environment variable
+2. Looking for Laravel project (has `artisan` file) in current directory
+3. Traversing up to find a Laravel project
+
+When a Laravel project is found, the **artisan driver** is used by default, which supports all Clockwork storage backends. The **file driver** is used as a fallback when only a direct storage path is available.
 
 ## Requirements
 
