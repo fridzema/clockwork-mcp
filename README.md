@@ -20,7 +20,8 @@ This MCP server gives Claude Code access to your Laravel application's Clockwork
 ### Option 1: Claude Code Plugin (Recommended)
 
 ```
-/plugin install github:fridzema/clockwork-mcp
+/marketplace add github:fridzema/clockwork-mcp
+/plugin install clockwork
 ```
 
 This installs the MCP server and adds convenience commands:
