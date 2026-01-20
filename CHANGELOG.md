@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2026-01-20
+
+### Fixed
+- Memory exhaustion when listing requests via artisan (only extract index fields, limit to 100)
+
 ## [0.2.1] - 2026-01-20
 
 ### Fixed
