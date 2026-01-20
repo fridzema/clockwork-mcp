@@ -2,6 +2,11 @@ import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import type { IndexEntry, RequestType } from '../types/clockwork.js';
 
+/**
+ * Parses the Clockwork index file to get request metadata.
+ * @param storagePath - Path to Clockwork storage directory
+ * @returns Array of index entries sorted by time (most recent first)
+ */
 export function parseIndex(storagePath: string): IndexEntry[] {
   const indexPath = join(storagePath, 'index');
 
@@ -10,9 +15,12 @@ export function parseIndex(storagePath: string): IndexEntry[] {
   }
 
   const content = readFileSync(indexPath, 'utf-8');
-  const lines = content.trim().split('\n').filter(line => line.length > 0);
+  const lines = content
+    .trim()
+    .split('\n')
+    .filter((line) => line.length > 0);
 
-  const entries: IndexEntry[] = lines.map(line => {
+  const entries: IndexEntry[] = lines.map((line) => {
     const parts = line.split('\t');
     const type = parts[7] as RequestType;
 
