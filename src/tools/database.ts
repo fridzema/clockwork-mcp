@@ -8,6 +8,7 @@ import type {
   AnalyzeSlowQueriesInput,
   DetectNPlusOneInput,
 } from '../types/tools.js';
+import { filterRequestsByScope } from './utility.js';
 
 export interface QueryStats {
   totalQueries: number;
@@ -20,6 +21,46 @@ export interface QueryStats {
     update: number;
     delete: number;
     other: number;
+  };
+}
+
+export interface AggregatedSlowQuery {
+  queryPattern: string;
+  totalOccurrences: number;
+  totalDuration: number;
+  maxDuration: number;
+  avgDuration: number;
+  affectedRequests: Array<{ id: string; uri?: string; method?: string }>;
+  exampleQuery: string;
+}
+
+export interface AggregatedSlowQueriesResult {
+  queries: AggregatedSlowQuery[];
+  summary: {
+    totalSlowQueries: number;
+    requestsAnalyzed: number;
+    requestsWithSlowQueries: number;
+    capped: boolean;
+    totalMatched: number;
+  };
+}
+
+export interface AggregatedNPlusOnePattern {
+  queryPattern: string;
+  totalOccurrences: number;
+  avgOccurrencesPerRequest: number;
+  affectedRequests: Array<{ id: string; uri?: string; method?: string; count: number }>;
+  exampleQuery: string;
+}
+
+export interface AggregatedNPlusOneResult {
+  patterns: AggregatedNPlusOnePattern[];
+  summary: {
+    totalPatterns: number;
+    requestsAnalyzed: number;
+    requestsWithNPlusOne: number;
+    capped: boolean;
+    totalMatched: number;
   };
 }
 
@@ -97,40 +138,191 @@ export function getQueryStats(storage: Storage, input: GetQueryStatsInput): Quer
 }
 
 /**
- * Finds queries exceeding a duration threshold.
+ * Normalizes a SQL query to a pattern by replacing literal values with placeholders.
+ */
+function normalizeQueryToPattern(query: string): string {
+  return query
+    .replace(/= ?\d+/g, '= ?') // numbers
+    .replace(/= ?'[^']*'/g, "= '?'") // single-quoted strings
+    .replace(/= ?"[^"]*"/g, '= "?"') // double-quoted strings
+    .replace(/IN \([^)]+\)/gi, 'IN (?)') // IN clauses
+    .replace(/LIMIT \d+/gi, 'LIMIT ?') // LIMIT
+    .replace(/OFFSET \d+/gi, 'OFFSET ?') // OFFSET
+    .trim();
+}
+
+/**
+ * Finds queries exceeding a duration threshold across multiple requests.
  * @param storage - Storage interface
- * @param input - Request ID and threshold in milliseconds (default: 100ms)
- * @returns Array of slow queries sorted by duration descending
+ * @param input - Scope parameters and threshold in milliseconds (default: 100ms)
+ * @returns Aggregated slow queries grouped by pattern
  */
 export function analyzeSlowQueriesForRequest(
   storage: Storage,
   input: AnalyzeSlowQueriesInput
-): DatabaseQuery[] {
-  if (!input.requestId) {
-    return [];
+): AggregatedSlowQueriesResult {
+  const threshold = input.threshold ?? 100;
+  const { ids, totalMatched, capped } = filterRequestsByScope(input, storage);
+
+  const patternMap = new Map<
+    string,
+    {
+      occurrences: number;
+      totalDuration: number;
+      maxDuration: number;
+      requests: Set<string>;
+      requestDetails: Map<string, { uri?: string; method?: string }>;
+      exampleQuery: string;
+    }
+  >();
+
+  let requestsWithSlowQueries = 0;
+
+  for (const id of ids) {
+    const request = storage.find(id);
+    if (!request?.databaseQueries) continue;
+
+    const slowQueries = analyzeSlowQueries(request.databaseQueries, threshold);
+    if (slowQueries.length > 0) {
+      requestsWithSlowQueries++;
+    }
+
+    for (const query of slowQueries) {
+      const pattern = normalizeQueryToPattern(query.query);
+      const existing = patternMap.get(pattern);
+
+      if (existing) {
+        existing.occurrences++;
+        existing.totalDuration += query.duration;
+        existing.maxDuration = Math.max(existing.maxDuration, query.duration);
+        existing.requests.add(id);
+        existing.requestDetails.set(id, { uri: request.uri, method: request.method });
+      } else {
+        const requestDetails = new Map<string, { uri?: string; method?: string }>();
+        requestDetails.set(id, { uri: request.uri, method: request.method });
+        patternMap.set(pattern, {
+          occurrences: 1,
+          totalDuration: query.duration,
+          maxDuration: query.duration,
+          requests: new Set([id]),
+          requestDetails,
+          exampleQuery: query.query,
+        });
+      }
+    }
   }
 
-  const request = storage.find(input.requestId);
+  const queries: AggregatedSlowQuery[] = Array.from(patternMap.entries())
+    .map(([pattern, data]) => ({
+      queryPattern: pattern,
+      totalOccurrences: data.occurrences,
+      totalDuration: data.totalDuration,
+      maxDuration: data.maxDuration,
+      avgDuration: data.totalDuration / data.occurrences,
+      affectedRequests: Array.from(data.requests).map((id) => ({
+        id,
+        ...data.requestDetails.get(id),
+      })),
+      exampleQuery: data.exampleQuery,
+    }))
+    .sort((a, b) => b.totalOccurrences - a.totalOccurrences);
 
-  if (!request?.databaseQueries) {
-    return [];
-  }
+  const limitedQueries = queries.slice(0, input.limit ?? 20);
 
-  return analyzeSlowQueries(request.databaseQueries, input.threshold ?? 100);
+  return {
+    queries: limitedQueries,
+    summary: {
+      totalSlowQueries: queries.reduce((sum, q) => sum + q.totalOccurrences, 0),
+      requestsAnalyzed: ids.length,
+      requestsWithSlowQueries,
+      capped,
+      totalMatched,
+    },
+  };
 }
 
 /**
- * Detects N+1 query patterns in a request.
+ * Detects N+1 query patterns across multiple requests.
  * @param storage - Storage interface
- * @param input - Request ID and detection threshold
- * @returns Array of detected N+1 patterns with query counts and examples
+ * @param input - Scope parameters and detection threshold
+ * @returns Aggregated N+1 patterns grouped by query pattern
  */
-export function detectNPlusOneForRequest(storage: Storage, input: DetectNPlusOneInput) {
-  const request = storage.find(input.requestId);
+export function detectNPlusOneForRequest(
+  storage: Storage,
+  input: DetectNPlusOneInput
+): AggregatedNPlusOneResult {
+  const threshold = input.threshold ?? 2;
+  const { ids, totalMatched, capped } = filterRequestsByScope(input, storage);
 
-  if (!request?.databaseQueries) {
-    return [];
+  const patternMap = new Map<
+    string,
+    {
+      totalOccurrences: number;
+      requests: Map<string, { uri?: string; method?: string; count: number }>;
+      exampleQuery: string;
+    }
+  >();
+
+  let requestsWithNPlusOne = 0;
+
+  for (const id of ids) {
+    const request = storage.find(id);
+    if (!request?.databaseQueries) continue;
+
+    const patterns = detectNPlusOne(request.databaseQueries, threshold);
+    if (patterns.length > 0) {
+      requestsWithNPlusOne++;
+    }
+
+    for (const nPlusOnePattern of patterns) {
+      // nPlusOnePattern.pattern is already normalized
+      const normalizedPattern = nPlusOnePattern.pattern;
+      const existing = patternMap.get(normalizedPattern);
+
+      if (existing) {
+        existing.totalOccurrences += nPlusOnePattern.count;
+        existing.requests.set(id, {
+          uri: request.uri,
+          method: request.method,
+          count: nPlusOnePattern.count,
+        });
+      } else {
+        const requests = new Map<string, { uri?: string; method?: string; count: number }>();
+        requests.set(id, {
+          uri: request.uri,
+          method: request.method,
+          count: nPlusOnePattern.count,
+        });
+        patternMap.set(normalizedPattern, {
+          totalOccurrences: nPlusOnePattern.count,
+          requests,
+          exampleQuery: nPlusOnePattern.examples[0] || nPlusOnePattern.pattern,
+        });
+      }
+    }
   }
 
-  return detectNPlusOne(request.databaseQueries, input.threshold);
+  const patterns: AggregatedNPlusOnePattern[] = Array.from(patternMap.entries())
+    .map(([pattern, data]) => ({
+      queryPattern: pattern,
+      totalOccurrences: data.totalOccurrences,
+      avgOccurrencesPerRequest: data.totalOccurrences / data.requests.size,
+      affectedRequests: Array.from(data.requests.entries()).map(([reqId, details]) => ({
+        id: reqId,
+        ...details,
+      })),
+      exampleQuery: data.exampleQuery,
+    }))
+    .sort((a, b) => b.totalOccurrences - a.totalOccurrences);
+
+  return {
+    patterns,
+    summary: {
+      totalPatterns: patterns.length,
+      requestsAnalyzed: ids.length,
+      requestsWithNPlusOne,
+      capped,
+      totalMatched,
+    },
+  };
 }

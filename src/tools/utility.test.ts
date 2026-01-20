@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getClockworkStatus, explainRequestFlow } from './utility.js';
+import {
+  getClockworkStatus,
+  explainRequestFlow,
+  parseTimeDuration,
+  filterRequestsByScope,
+} from './utility.js';
 import { createStorage } from '../storage/storage.js';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
@@ -64,6 +69,67 @@ describe('Utility Tools', () => {
       expect(result.middleware).toEqual(['auth', 'api']);
       expect(result.queryCount).toBe(1);
       expect(result.status).toBe(200);
+    });
+  });
+
+  describe('parseTimeDuration', () => {
+    it('parses minutes correctly', () => {
+      expect(parseTimeDuration('30m')).toBe(30 * 60 * 1000);
+      expect(parseTimeDuration('1m')).toBe(60 * 1000);
+    });
+
+    it('parses hours correctly', () => {
+      expect(parseTimeDuration('1h')).toBe(60 * 60 * 1000);
+      expect(parseTimeDuration('2h')).toBe(2 * 60 * 60 * 1000);
+    });
+
+    it('parses days correctly', () => {
+      expect(parseTimeDuration('1d')).toBe(24 * 60 * 60 * 1000);
+      expect(parseTimeDuration('7d')).toBe(7 * 24 * 60 * 60 * 1000);
+    });
+
+    it('parses weeks correctly', () => {
+      expect(parseTimeDuration('1w')).toBe(7 * 24 * 60 * 60 * 1000);
+      expect(parseTimeDuration('2w')).toBe(2 * 7 * 24 * 60 * 60 * 1000);
+    });
+
+    it('handles decimal values', () => {
+      expect(parseTimeDuration('1.5h')).toBe(1.5 * 60 * 60 * 1000);
+    });
+
+    it('is case insensitive', () => {
+      expect(parseTimeDuration('1H')).toBe(60 * 60 * 1000);
+      expect(parseTimeDuration('30M')).toBe(30 * 60 * 1000);
+    });
+
+    it('returns null for invalid format', () => {
+      expect(parseTimeDuration('invalid')).toBeNull();
+      expect(parseTimeDuration('10')).toBeNull();
+      expect(parseTimeDuration('10x')).toBeNull();
+      expect(parseTimeDuration('')).toBeNull();
+    });
+  });
+
+  describe('filterRequestsByScope', () => {
+    it('returns specific request when requestId is provided', () => {
+      const result = filterRequestsByScope({ requestId: 'req-1' }, getStorage());
+      expect(result.ids).toEqual(['req-1']);
+      expect(result.capped).toBe(false);
+    });
+
+    it('returns latest request by default', () => {
+      const result = filterRequestsByScope({}, getStorage());
+      expect(result.ids).toHaveLength(1);
+    });
+
+    it('respects count parameter', () => {
+      const result = filterRequestsByScope({ count: 2 }, getStorage());
+      expect(result.ids).toHaveLength(2);
+    });
+
+    it('filters by URI pattern', () => {
+      const result = filterRequestsByScope({ uri: '/api/users', all: true }, getStorage());
+      expect(result.ids).toHaveLength(2);
     });
   });
 });
