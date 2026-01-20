@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createStorage } from './storage.js';
+import { createStorage, resolveStorage } from './storage.js';
 import * as artisan from './artisan.js';
 import * as reader from './reader.js';
 import * as indexParser from './index-parser.js';
+import * as locator from './locator.js';
 
 vi.mock('./artisan.js');
 vi.mock('./reader.js');
 vi.mock('./index-parser.js');
+vi.mock('./locator.js');
 
 describe('Unified Storage', () => {
   beforeEach(() => {
@@ -157,5 +159,85 @@ describe('Unified Storage', () => {
     it('throws for unknown driver', () => {
       expect(() => createStorage({ driver: 'unknown' as any })).toThrow('Unknown storage driver');
     });
+  });
+});
+
+describe('resolveStorage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('uses artisan driver when CLOCKWORK_STORAGE_DRIVER=artisan', () => {
+    vi.mocked(locator.findProjectPath).mockReturnValue('/path/to/laravel');
+
+    const storage = resolveStorage({
+      CLOCKWORK_STORAGE_DRIVER: 'artisan',
+      CLOCKWORK_PROJECT_PATH: '/path/to/laravel',
+    });
+
+    expect(storage).toBeDefined();
+    // Test that it uses artisan by calling a method
+    vi.mocked(artisan.listRequestsViaArtisan).mockReturnValue([]);
+    storage.list();
+    expect(artisan.listRequestsViaArtisan).toHaveBeenCalled();
+  });
+
+  it('uses file driver when CLOCKWORK_STORAGE_DRIVER=file', () => {
+    vi.mocked(locator.findStoragePath).mockReturnValue('/path/to/storage/clockwork');
+
+    const storage = resolveStorage({
+      CLOCKWORK_STORAGE_DRIVER: 'file',
+      CLOCKWORK_STORAGE_PATH: '/path/to/storage/clockwork',
+    });
+
+    expect(storage).toBeDefined();
+    vi.mocked(indexParser.parseIndex).mockReturnValue([]);
+    storage.list();
+    expect(indexParser.parseIndex).toHaveBeenCalled();
+  });
+
+  it('auto-detects artisan driver when project path found', () => {
+    vi.mocked(locator.findProjectPath).mockReturnValue('/path/to/laravel');
+    vi.mocked(locator.findStoragePath).mockReturnValue(null);
+
+    const storage = resolveStorage({});
+
+    vi.mocked(artisan.listRequestsViaArtisan).mockReturnValue([]);
+    storage.list();
+    expect(artisan.listRequestsViaArtisan).toHaveBeenCalled();
+  });
+
+  it('falls back to file driver when only storage path found', () => {
+    vi.mocked(locator.findProjectPath).mockReturnValue(null);
+    vi.mocked(locator.findStoragePath).mockReturnValue('/path/to/storage/clockwork');
+
+    const storage = resolveStorage({});
+
+    vi.mocked(indexParser.parseIndex).mockReturnValue([]);
+    storage.list();
+    expect(indexParser.parseIndex).toHaveBeenCalled();
+  });
+
+  it('throws when no storage can be resolved', () => {
+    vi.mocked(locator.findProjectPath).mockReturnValue(null);
+    vi.mocked(locator.findStoragePath).mockReturnValue(null);
+
+    expect(() => resolveStorage({})).toThrow('Could not find Clockwork storage');
+  });
+
+  it('throws when artisan driver requested but no project found', () => {
+    vi.mocked(locator.findProjectPath).mockReturnValue(null);
+
+    expect(() => resolveStorage({ CLOCKWORK_STORAGE_DRIVER: 'artisan' })).toThrow(
+      'Could not find Laravel project'
+    );
+  });
+
+  it('throws when file driver requested but no storage found', () => {
+    vi.mocked(locator.findStoragePath).mockReturnValue(null);
+
+    expect(() => resolveStorage({ CLOCKWORK_STORAGE_DRIVER: 'file' })).toThrow(
+      'Could not find Clockwork storage path'
+    );
   });
 });
