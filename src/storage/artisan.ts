@@ -99,6 +99,7 @@ export function getLatestRequestViaArtisan(
 /**
  * Lists Clockwork requests via artisan tinker.
  * Returns lightweight index entries - only extracts minimal fields to avoid memory issues.
+ * Uses previous() instead of all() to avoid loading all requests into memory (SQL storage OOM).
  * @param projectPath - Path to Laravel project root
  * @param options - Execution options
  * @param limit - Maximum number of requests to return (default 100)
@@ -109,9 +110,9 @@ export function listRequestsViaArtisan(
   options: ArtisanOptions = {},
   limit: number = 100
 ): IndexEntry[] {
-  // Only extract index-level fields to avoid memory exhaustion
-  // Use array_slice to limit results, single line to avoid shell escaping issues
-  const phpCode = `echo json_encode(array_map(fn($r) => ["id" => $r->id, "time" => $r->time, "type" => $r->type ?? "request", "method" => $r->method ?? null, "uri" => $r->uri ?? null, "controller" => $r->controller ?? null, "responseStatus" => $r->responseStatus ?? null, "responseDuration" => $r->responseDuration ?? null, "commandName" => $r->commandName ?? null], array_slice(app("clockwork")->storage()->all(), -${limit})));`;
+  // Use previous() instead of all() - all() causes OOM on SQL storage by loading everything
+  // previous() uses SQL LIMIT under the hood and is much more efficient
+  const phpCode = `$s = app("clockwork")->storage(); $l = $s->latest(); if (!$l) { echo "[]"; } else { $p = $s->previous($l->id, ${limit - 1}); array_unshift($p, $l); echo json_encode(array_map(fn($r) => ["id" => $r->id, "time" => $r->time, "type" => $r->type ?? "request", "method" => $r->method ?? null, "uri" => $r->uri ?? null, "controller" => $r->controller ?? null, "responseStatus" => $r->responseStatus ?? null, "responseDuration" => $r->responseDuration ?? null, "commandName" => $r->commandName ?? null], $p)); }`;
 
   const entries = executePhp<IndexEntry[]>(projectPath, phpCode, options) ?? [];
 
