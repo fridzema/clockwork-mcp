@@ -1,8 +1,13 @@
-import { readRequest } from '../storage/reader.js';
+import type { Storage } from '../storage/storage.js';
 import { detectNPlusOne } from '../analyzers/n-plus-one.js';
 import { analyzeSlowQueries } from '../analyzers/slow-queries.js';
 import type { DatabaseQuery } from '../types/clockwork.js';
-import type { GetQueriesInput, GetQueryStatsInput, AnalyzeSlowQueriesInput, DetectNPlusOneInput } from '../types/tools.js';
+import type {
+  GetQueriesInput,
+  GetQueryStatsInput,
+  AnalyzeSlowQueriesInput,
+  DetectNPlusOneInput,
+} from '../types/tools.js';
 
 export interface QueryStats {
   totalQueries: number;
@@ -18,8 +23,14 @@ export interface QueryStats {
   };
 }
 
-export function getQueries(storagePath: string, input: GetQueriesInput): DatabaseQuery[] {
-  const request = readRequest(storagePath, input.requestId);
+/**
+ * Gets database queries executed during a request.
+ * @param storage - Storage interface
+ * @param input - Request ID and optional slow query filter
+ * @returns Array of database queries
+ */
+export function getQueries(storage: Storage, input: GetQueriesInput): DatabaseQuery[] {
+  const request = storage.find(input.requestId);
 
   if (!request?.databaseQueries) {
     return [];
@@ -28,13 +39,19 @@ export function getQueries(storagePath: string, input: GetQueriesInput): Databas
   let queries = request.databaseQueries;
 
   if (input.slow && input.threshold) {
-    queries = queries.filter(q => q.duration >= input.threshold!);
+    queries = queries.filter((q) => q.duration >= input.threshold!);
   }
 
   return queries;
 }
 
-export function getQueryStats(storagePath: string, input: GetQueryStatsInput): QueryStats {
+/**
+ * Gets aggregate statistics for database queries in a request.
+ * @param storage - Storage interface
+ * @param input - Request ID
+ * @returns Query statistics including counts, durations, and breakdown by type
+ */
+export function getQueryStats(storage: Storage, input: GetQueryStatsInput): QueryStats {
   const defaultStats: QueryStats = {
     totalQueries: 0,
     totalDuration: 0,
@@ -47,7 +64,7 @@ export function getQueryStats(storagePath: string, input: GetQueryStatsInput): Q
     return defaultStats;
   }
 
-  const request = readRequest(storagePath, input.requestId);
+  const request = storage.find(input.requestId);
 
   if (!request?.databaseQueries || request.databaseQueries.length === 0) {
     return defaultStats;
@@ -55,7 +72,10 @@ export function getQueryStats(storagePath: string, input: GetQueryStatsInput): Q
 
   const queries = request.databaseQueries;
   const totalDuration = queries.reduce((sum, q) => sum + q.duration, 0);
-  const slowest = queries.reduce((max, q) => (q.duration > (max?.duration ?? 0) ? q : max), queries[0]);
+  const slowest = queries.reduce(
+    (max, q) => (q.duration > (max?.duration ?? 0) ? q : max),
+    queries[0]
+  );
 
   const queriesByType = { select: 0, insert: 0, update: 0, delete: 0, other: 0 };
   for (const q of queries) {
@@ -76,15 +96,21 @@ export function getQueryStats(storagePath: string, input: GetQueryStatsInput): Q
   };
 }
 
+/**
+ * Finds queries exceeding a duration threshold.
+ * @param storage - Storage interface
+ * @param input - Request ID and threshold in milliseconds (default: 100ms)
+ * @returns Array of slow queries sorted by duration descending
+ */
 export function analyzeSlowQueriesForRequest(
-  storagePath: string,
+  storage: Storage,
   input: AnalyzeSlowQueriesInput
 ): DatabaseQuery[] {
   if (!input.requestId) {
     return [];
   }
 
-  const request = readRequest(storagePath, input.requestId);
+  const request = storage.find(input.requestId);
 
   if (!request?.databaseQueries) {
     return [];
@@ -93,11 +119,14 @@ export function analyzeSlowQueriesForRequest(
   return analyzeSlowQueries(request.databaseQueries, input.threshold ?? 100);
 }
 
-export function detectNPlusOneForRequest(
-  storagePath: string,
-  input: DetectNPlusOneInput
-) {
-  const request = readRequest(storagePath, input.requestId);
+/**
+ * Detects N+1 query patterns in a request.
+ * @param storage - Storage interface
+ * @param input - Request ID and detection threshold
+ * @returns Array of detected N+1 patterns with query counts and examples
+ */
+export function detectNPlusOneForRequest(storage: Storage, input: DetectNPlusOneInput) {
+  const request = storage.find(input.requestId);
 
   if (!request?.databaseQueries) {
     return [];

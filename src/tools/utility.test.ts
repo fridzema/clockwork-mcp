@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getClockworkStatus, explainRequestFlow } from './utility.js';
+import { createStorage } from '../storage/storage.js';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -17,43 +18,46 @@ describe('Utility Tools', () => {
     ].join('\n');
     writeFileSync(join(testDir, 'index'), indexContent);
 
-    writeFileSync(join(testDir, 'req-1.json'), JSON.stringify({
-      id: 'req-1',
-      type: 'request',
-      time: 1705312345,
-      method: 'GET',
-      uri: '/api/users',
-      controller: 'UserController@index',
-      responseStatus: 200,
-      responseDuration: 50,
-      middleware: ['auth', 'api'],
-      databaseQueries: [
-        { query: 'SELECT * FROM users', duration: 10 },
-      ],
-    }));
+    writeFileSync(
+      join(testDir, 'req-1.json'),
+      JSON.stringify({
+        id: 'req-1',
+        type: 'request',
+        time: 1705312345,
+        method: 'GET',
+        uri: '/api/users',
+        controller: 'UserController@index',
+        responseStatus: 200,
+        responseDuration: 50,
+        middleware: ['auth', 'api'],
+        databaseQueries: [{ query: 'SELECT * FROM users', duration: 10 }],
+      })
+    );
   });
 
   afterEach(() => {
     rmSync(testDir, { recursive: true, force: true });
   });
 
+  const getStorage = () => createStorage({ driver: 'file', storagePath: testDir });
+
   describe('getClockworkStatus', () => {
     it('returns storage status', () => {
-      const result = getClockworkStatus(testDir);
+      const result = getClockworkStatus(getStorage(), testDir);
       expect(result.found).toBe(true);
       expect(result.requestCount).toBe(2);
       expect(result.storagePath).toBe(testDir);
     });
 
     it('returns not found for invalid path', () => {
-      const result = getClockworkStatus('/nonexistent/path');
+      const result = getClockworkStatus(getStorage(), '/nonexistent/path');
       expect(result.found).toBe(false);
     });
   });
 
   describe('explainRequestFlow', () => {
     it('returns request flow summary', () => {
-      const result = explainRequestFlow(testDir, 'req-1');
+      const result = explainRequestFlow(getStorage(), 'req-1');
       expect(result.method).toBe('GET');
       expect(result.uri).toBe('/api/users');
       expect(result.controller).toBe('UserController@index');

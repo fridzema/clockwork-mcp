@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getQueries, getQueryStats, analyzeSlowQueriesForRequest, detectNPlusOneForRequest } from './database.js';
+import {
+  getQueries,
+  getQueryStats,
+  analyzeSlowQueriesForRequest,
+  detectNPlusOneForRequest,
+} from './database.js';
+import { createStorage } from '../storage/storage.js';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -30,26 +36,28 @@ describe('Database Tools', () => {
     rmSync(testDir, { recursive: true, force: true });
   });
 
+  const getStorage = () => createStorage({ driver: 'file', storagePath: testDir });
+
   describe('getQueries', () => {
     it('returns all queries for a request', () => {
-      const result = getQueries(testDir, { requestId: 'test-request' });
+      const result = getQueries(getStorage(), { requestId: 'test-request' });
       expect(result).toHaveLength(4);
     });
 
     it('filters slow queries when threshold provided', () => {
-      const result = getQueries(testDir, { requestId: 'test-request', slow: true, threshold: 100 });
+      const result = getQueries(getStorage(), { requestId: 'test-request', slow: true, threshold: 100 });
       expect(result).toHaveLength(2);
     });
 
     it('returns empty array for non-existent request', () => {
-      const result = getQueries(testDir, { requestId: 'nonexistent' });
+      const result = getQueries(getStorage(), { requestId: 'nonexistent' });
       expect(result).toHaveLength(0);
     });
   });
 
   describe('getQueryStats', () => {
     it('returns aggregate statistics', () => {
-      const result = getQueryStats(testDir, { requestId: 'test-request' });
+      const result = getQueryStats(getStorage(), { requestId: 'test-request' });
       expect(result.totalQueries).toBe(4);
       expect(result.totalDuration).toBe(363);
       expect(result.slowestQuery?.duration).toBe(200);
@@ -58,7 +66,10 @@ describe('Database Tools', () => {
 
   describe('analyzeSlowQueriesForRequest', () => {
     it('finds slow queries', () => {
-      const result = analyzeSlowQueriesForRequest(testDir, { requestId: 'test-request', threshold: 100 });
+      const result = analyzeSlowQueriesForRequest(getStorage(), {
+        requestId: 'test-request',
+        threshold: 100,
+      });
       expect(result).toHaveLength(2);
       expect(result[0].duration).toBe(200);
     });
@@ -66,7 +77,7 @@ describe('Database Tools', () => {
 
   describe('detectNPlusOneForRequest', () => {
     it('detects N+1 patterns', () => {
-      const result = detectNPlusOneForRequest(testDir, { requestId: 'test-request', threshold: 2 });
+      const result = detectNPlusOneForRequest(getStorage(), { requestId: 'test-request', threshold: 2 });
       expect(result).toHaveLength(1);
       expect(result[0].count).toBe(3);
     });

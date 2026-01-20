@@ -1,6 +1,10 @@
-import { readRequest } from '../storage/reader.js';
+import type { Storage } from '../storage/storage.js';
 import type { TimelineEvent } from '../types/clockwork.js';
-import type { GetPerformanceSummaryInput, GetTimelineInput, CompareRequestsInput } from '../types/tools.js';
+import type {
+  GetPerformanceSummaryInput,
+  GetTimelineInput,
+  CompareRequestsInput,
+} from '../types/tools.js';
 
 export interface PerformanceSummary {
   responseDuration: number;
@@ -20,8 +24,14 @@ export interface RequestComparison {
   memoryDiff: number;
 }
 
+/**
+ * Gets a performance overview for a request.
+ * @param storage - Storage interface
+ * @param input - Request ID
+ * @returns Performance metrics including duration, memory, queries, and cache
+ */
 export function getPerformanceSummary(
-  storagePath: string,
+  storage: Storage,
   input: GetPerformanceSummaryInput
 ): PerformanceSummary {
   const defaultSummary: PerformanceSummary = {
@@ -38,7 +48,7 @@ export function getPerformanceSummary(
     return defaultSummary;
   }
 
-  const request = readRequest(storagePath, input.requestId);
+  const request = storage.find(input.requestId);
 
   if (!request) {
     return defaultSummary;
@@ -58,8 +68,14 @@ export function getPerformanceSummary(
   };
 }
 
-export function getTimeline(storagePath: string, input: GetTimelineInput): TimelineEvent[] {
-  const request = readRequest(storagePath, input.requestId);
+/**
+ * Gets the execution timeline for a request.
+ * @param storage - Storage interface
+ * @param input - Request ID
+ * @returns Array of timeline events showing execution flow
+ */
+export function getTimeline(storage: Storage, input: GetTimelineInput): TimelineEvent[] {
+  const request = storage.find(input.requestId);
 
   if (!request?.timelineData) {
     return [];
@@ -68,12 +84,18 @@ export function getTimeline(storagePath: string, input: GetTimelineInput): Timel
   return request.timelineData;
 }
 
+/**
+ * Compares performance metrics between two requests.
+ * @param storage - Storage interface
+ * @param input - Two request IDs to compare
+ * @returns Comparison showing differences in duration, queries, and memory
+ */
 export function compareRequests(
-  storagePath: string,
+  storage: Storage,
   input: CompareRequestsInput
 ): RequestComparison {
-  const req1 = readRequest(storagePath, input.requestId1);
-  const req2 = readRequest(storagePath, input.requestId2);
+  const req1 = storage.find(input.requestId1);
+  const req2 = storage.find(input.requestId2);
 
   const r1 = {
     id: input.requestId1,

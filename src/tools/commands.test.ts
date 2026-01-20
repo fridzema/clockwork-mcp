@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { listCommands, getCommand } from './commands.js';
+import { createStorage } from '../storage/storage.js';
 import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -19,42 +20,48 @@ describe('Command Tools', () => {
     ].join('\n');
     writeFileSync(join(testDir, 'index'), indexContent);
 
-    writeFileSync(join(testDir, 'cmd-1.json'), JSON.stringify({
-      id: 'cmd-1',
-      type: 'command',
-      time: 1705312345,
-      commandName: 'migrate',
-      commandArguments: {},
-      commandOptions: { force: true },
-      commandExitCode: 0,
-      commandOutput: 'Migration completed successfully',
-      databaseQueries: [
-        { query: 'CREATE TABLE users', duration: 50 },
-      ],
-    }));
+    writeFileSync(
+      join(testDir, 'cmd-1.json'),
+      JSON.stringify({
+        id: 'cmd-1',
+        type: 'command',
+        time: 1705312345,
+        commandName: 'migrate',
+        commandArguments: {},
+        commandOptions: { force: true },
+        commandExitCode: 0,
+        commandOutput: 'Migration completed successfully',
+        databaseQueries: [{ query: 'CREATE TABLE users', duration: 50 }],
+      })
+    );
 
-    writeFileSync(join(testDir, 'cmd-2.json'), JSON.stringify({
-      id: 'cmd-2',
-      type: 'command',
-      time: 1705312400,
-      commandName: 'db:seed',
-      commandExitCode: 0,
-    }));
+    writeFileSync(
+      join(testDir, 'cmd-2.json'),
+      JSON.stringify({
+        id: 'cmd-2',
+        type: 'command',
+        time: 1705312400,
+        commandName: 'db:seed',
+        commandExitCode: 0,
+      })
+    );
   });
 
   afterEach(() => {
     rmSync(testDir, { recursive: true, force: true });
   });
 
+  const getStorage = () => createStorage({ driver: 'file', storagePath: testDir });
+
   describe('listCommands', () => {
     it('returns only command entries', () => {
-      const result = listCommands(testDir, {});
+      const result = listCommands(getStorage(), {});
       expect(result).toHaveLength(2);
-      expect(result.every(e => e.type === 'command')).toBe(true);
+      expect(result.every((e) => e.type === 'command')).toBe(true);
     });
 
     it('filters by command name', () => {
-      const result = listCommands(testDir, { name: 'migrate' });
+      const result = listCommands(getStorage(), { name: 'migrate' });
       expect(result).toHaveLength(1);
       expect(result[0].commandName).toBe('migrate');
     });
@@ -62,7 +69,7 @@ describe('Command Tools', () => {
 
   describe('getCommand', () => {
     it('returns full command data', () => {
-      const result = getCommand(testDir, { requestId: 'cmd-1' });
+      const result = getCommand(getStorage(), { requestId: 'cmd-1' });
       expect(result).not.toBeNull();
       expect(result?.commandName).toBe('migrate');
       expect(result?.commandOutput).toBe('Migration completed successfully');

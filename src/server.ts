@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 
+import { resolveStorage, type Storage } from './storage/storage.js';
 import { findStoragePath } from './storage/locator.js';
 import * as requestTools from './tools/requests.js';
 import * as dbTools from './tools/database.js';
@@ -12,26 +13,42 @@ import * as cmdTools from './tools/commands.js';
 import * as utilTools from './tools/utility.js';
 import * as schemas from './types/tools.js';
 
+/**
+ * Creates and configures the MCP server with all Clockwork debugging tools.
+ * @returns Configured McpServer instance ready to connect
+ * @example
+ * ```ts
+ * const server = createServer();
+ * await server.connect(transport);
+ * ```
+ */
 export function createServer() {
   const server = new McpServer({
     name: 'clockwork-mcp',
     version: '0.1.0',
   });
 
-  // Get storage path - will be resolved when tools are called
+  // Resolve storage - will be created when tools are called
+  let storage: Storage | null = null;
+  const getStorage = (): Storage => {
+    if (!storage) {
+      storage = resolveStorage({
+        CLOCKWORK_STORAGE_PATH: process.env.CLOCKWORK_STORAGE_PATH,
+        CLOCKWORK_PROJECT_PATH: process.env.CLOCKWORK_PROJECT_PATH,
+        CLOCKWORK_STORAGE_DRIVER: process.env.CLOCKWORK_STORAGE_DRIVER,
+        CLOCKWORK_PHP_PATH: process.env.CLOCKWORK_PHP_PATH,
+      });
+    }
+    return storage;
+  };
+
+  // Helper to get storage path for status tool (file size calculation)
   const getStoragePath = (): string => {
     const path = findStoragePath({
       CLOCKWORK_STORAGE_PATH: process.env.CLOCKWORK_STORAGE_PATH,
       CLOCKWORK_PROJECT_PATH: process.env.CLOCKWORK_PROJECT_PATH,
     });
-
-    if (!path) {
-      throw new Error(
-        'Clockwork storage not found. Set CLOCKWORK_STORAGE_PATH or run from a Laravel project.'
-      );
-    }
-
-    return path;
+    return path ?? '';
   };
 
   // Request discovery tools
@@ -40,7 +57,10 @@ export function createServer() {
     'List recent Clockwork requests with optional filtering',
     schemas.listRequestsSchema.shape,
     async (input) => {
-      const result = requestTools.listRequests(getStoragePath(), input as schemas.ListRequestsInput);
+      const result = requestTools.listRequests(
+        getStorage(),
+        input as schemas.ListRequestsInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -50,27 +70,25 @@ export function createServer() {
     'Get full details of a specific request by ID',
     { requestId: z.string().describe('Clockwork request ID') },
     async ({ requestId }) => {
-      const result = requestTools.getRequest(getStoragePath(), requestId);
+      const result = requestTools.getRequest(getStorage(), requestId);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
 
-  server.tool(
-    'get_latest_request',
-    'Get the most recent Clockwork request',
-    {},
-    async () => {
-      const result = requestTools.getLatestRequest(getStoragePath());
-      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
-    }
-  );
+  server.tool('get_latest_request', 'Get the most recent Clockwork request', {}, async () => {
+    const result = requestTools.getLatestRequest(getStorage());
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  });
 
   server.tool(
     'search_requests',
     'Search requests by controller, URI, status, or duration',
     schemas.searchRequestsSchema.shape,
     async (input) => {
-      const result = requestTools.searchRequests(getStoragePath(), input as schemas.SearchRequestsInput);
+      const result = requestTools.searchRequests(
+        getStorage(),
+        input as schemas.SearchRequestsInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -81,7 +99,7 @@ export function createServer() {
     'Get database queries for a request',
     schemas.getQueriesSchema.shape,
     async (input) => {
-      const result = dbTools.getQueries(getStoragePath(), input as schemas.GetQueriesInput);
+      const result = dbTools.getQueries(getStorage(), input as schemas.GetQueriesInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -91,7 +109,10 @@ export function createServer() {
     'Find slow database queries above threshold',
     schemas.analyzeSlowQueriesSchema.shape,
     async (input) => {
-      const result = dbTools.analyzeSlowQueriesForRequest(getStoragePath(), input as schemas.AnalyzeSlowQueriesInput);
+      const result = dbTools.analyzeSlowQueriesForRequest(
+        getStorage(),
+        input as schemas.AnalyzeSlowQueriesInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -101,7 +122,10 @@ export function createServer() {
     'Detect N+1 query patterns in a request',
     schemas.detectNPlusOneSchema.shape,
     async (input) => {
-      const result = dbTools.detectNPlusOneForRequest(getStoragePath(), input as schemas.DetectNPlusOneInput);
+      const result = dbTools.detectNPlusOneForRequest(
+        getStorage(),
+        input as schemas.DetectNPlusOneInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -111,7 +135,7 @@ export function createServer() {
     'Get aggregate query statistics for a request',
     schemas.getQueryStatsSchema.shape,
     async (input) => {
-      const result = dbTools.getQueryStats(getStoragePath(), input as schemas.GetQueryStatsInput);
+      const result = dbTools.getQueryStats(getStorage(), input as schemas.GetQueryStatsInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -122,7 +146,10 @@ export function createServer() {
     'Get performance overview for a request',
     schemas.getPerformanceSummarySchema.shape,
     async (input) => {
-      const result = perfTools.getPerformanceSummary(getStoragePath(), input as schemas.GetPerformanceSummaryInput);
+      const result = perfTools.getPerformanceSummary(
+        getStorage(),
+        input as schemas.GetPerformanceSummaryInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -132,7 +159,7 @@ export function createServer() {
     'Get timeline events for a request',
     schemas.getTimelineSchema.shape,
     async (input) => {
-      const result = perfTools.getTimeline(getStoragePath(), input as schemas.GetTimelineInput);
+      const result = perfTools.getTimeline(getStorage(), input as schemas.GetTimelineInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -142,7 +169,10 @@ export function createServer() {
     'Compare two requests side by side',
     schemas.compareRequestsSchema.shape,
     async (input) => {
-      const result = perfTools.compareRequests(getStoragePath(), input as schemas.CompareRequestsInput);
+      const result = perfTools.compareRequests(
+        getStorage(),
+        input as schemas.CompareRequestsInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -153,7 +183,10 @@ export function createServer() {
     'Get cache operations for a request',
     schemas.getCacheOperationsSchema.shape,
     async (input) => {
-      const result = cacheTools.getCacheOperations(getStoragePath(), input as schemas.GetCacheOperationsInput);
+      const result = cacheTools.getCacheOperations(
+        getStorage(),
+        input as schemas.GetCacheOperationsInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -163,7 +196,10 @@ export function createServer() {
     'Get cache statistics (hit ratio, totals)',
     schemas.getCacheStatsSchema.shape,
     async (input) => {
-      const result = cacheTools.getCacheStats(getStoragePath(), input as schemas.GetCacheStatsInput);
+      const result = cacheTools.getCacheStats(
+        getStorage(),
+        input as schemas.GetCacheStatsInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -173,7 +209,10 @@ export function createServer() {
     'Get Redis commands for a request',
     schemas.getRedisCommandsSchema.shape,
     async (input) => {
-      const result = cacheTools.getRedisCommands(getStoragePath(), input as schemas.GetRedisCommandsInput);
+      const result = cacheTools.getRedisCommands(
+        getStorage(),
+        input as schemas.GetRedisCommandsInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -184,7 +223,7 @@ export function createServer() {
     'Get log entries for a request',
     schemas.getLogsSchema.shape,
     async (input) => {
-      const result = contextTools.getLogs(getStoragePath(), input as schemas.GetLogsInput);
+      const result = contextTools.getLogs(getStorage(), input as schemas.GetLogsInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -194,7 +233,7 @@ export function createServer() {
     'Get dispatched events for a request',
     schemas.getEventsSchema.shape,
     async (input) => {
-      const result = contextTools.getEvents(getStoragePath(), input as schemas.GetEventsInput);
+      const result = contextTools.getEvents(getStorage(), input as schemas.GetEventsInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -204,7 +243,7 @@ export function createServer() {
     'Get rendered views for a request',
     schemas.getViewsSchema.shape,
     async (input) => {
-      const result = contextTools.getViews(getStoragePath(), input as schemas.GetViewsInput);
+      const result = contextTools.getViews(getStorage(), input as schemas.GetViewsInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -214,7 +253,10 @@ export function createServer() {
     'Get outgoing HTTP requests made during a request',
     schemas.getHttpRequestsSchema.shape,
     async (input) => {
-      const result = contextTools.getHttpRequests(getStoragePath(), input as schemas.GetHttpRequestsInput);
+      const result = contextTools.getHttpRequests(
+        getStorage(),
+        input as schemas.GetHttpRequestsInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -225,7 +267,7 @@ export function createServer() {
     'List profiled Artisan command executions',
     schemas.listCommandsSchema.shape,
     async (input) => {
-      const result = cmdTools.listCommands(getStoragePath(), input as schemas.ListCommandsInput);
+      const result = cmdTools.listCommands(getStorage(), input as schemas.ListCommandsInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -235,7 +277,7 @@ export function createServer() {
     'Get full details of an Artisan command execution',
     schemas.getCommandSchema.shape,
     async (input) => {
-      const result = cmdTools.getCommand(getStoragePath(), input as schemas.GetCommandInput);
+      const result = cmdTools.getCommand(getStorage(), input as schemas.GetCommandInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -246,11 +288,7 @@ export function createServer() {
     'Check Clockwork storage status and statistics',
     {},
     async () => {
-      const path = findStoragePath({
-        CLOCKWORK_STORAGE_PATH: process.env.CLOCKWORK_STORAGE_PATH,
-        CLOCKWORK_PROJECT_PATH: process.env.CLOCKWORK_PROJECT_PATH,
-      });
-      const result = utilTools.getClockworkStatus(path ?? '');
+      const result = utilTools.getClockworkStatus(getStorage(), getStoragePath());
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -260,7 +298,7 @@ export function createServer() {
     'Get high-level summary of what happened in a request',
     { requestId: z.string().describe('Clockwork request ID') },
     async ({ requestId }) => {
-      const result = utilTools.explainRequestFlow(getStoragePath(), requestId);
+      const result = utilTools.explainRequestFlow(getStorage(), requestId);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -268,6 +306,10 @@ export function createServer() {
   return server;
 }
 
+/**
+ * Creates the server and starts it using stdio transport.
+ * This is the main entry point for the CLI.
+ */
 export async function startServer() {
   const server = createServer();
   const transport = new StdioServerTransport();

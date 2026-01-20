@@ -40,7 +40,9 @@ export const getQueriesSchema = z.object({
 });
 
 export const analyzeSlowQueriesSchema = z.object({
-  requestId: requestIdSchema.optional().describe('Analyze specific request, or all recent if omitted'),
+  requestId: requestIdSchema
+    .optional()
+    .describe('Analyze specific request, or all recent if omitted'),
   threshold: z.number().default(100).describe('Slow query threshold in ms'),
   limit: z.number().default(20).describe('Max queries to return'),
 });
@@ -51,7 +53,9 @@ export const detectNPlusOneSchema = z.object({
 });
 
 export const getQueryStatsSchema = z.object({
-  requestId: requestIdSchema.optional().describe('Stats for specific request, or aggregate if omitted'),
+  requestId: requestIdSchema
+    .optional()
+    .describe('Stats for specific request, or aggregate if omitted'),
   ...timeRangeSchema.shape,
 });
 
