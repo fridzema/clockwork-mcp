@@ -56,7 +56,7 @@ describe('Slow Query Analyzer', () => {
 
       expect(result).toHaveLength(2);
 
-      const userPattern = result.find(g => g.pattern.includes('users'));
+      const userPattern = result.find((g) => g.pattern.includes('users'));
       expect(userPattern?.count).toBe(2);
       expect(userPattern?.totalDuration).toBe(250);
       expect(userPattern?.avgDuration).toBe(125);

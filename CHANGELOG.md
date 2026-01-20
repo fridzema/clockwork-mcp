@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1] - 2026-01-20
+
+### Fixed
+- Duplicate shebang in build output causing MCP server startup failure
+
 ## [0.2.0] - 2026-01-20
 
 ### Added

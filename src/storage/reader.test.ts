@@ -37,9 +37,7 @@ describe('Request Reader', () => {
         uri: '/api/users',
         responseStatus: 200,
         responseDuration: 45.5,
-        databaseQueries: [
-          { query: 'SELECT * FROM users', duration: 5.2 }
-        ],
+        databaseQueries: [{ query: 'SELECT * FROM users', duration: 5.2 }],
       };
 
       writeFileSync(join(testDir, 'abc123.json'), JSON.stringify(request));
