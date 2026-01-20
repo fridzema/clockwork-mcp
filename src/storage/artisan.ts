@@ -97,33 +97,35 @@ export function getLatestRequestViaArtisan(
 }
 
 /**
- * Lists all Clockwork requests via artisan tinker.
- * Returns lightweight index entries extracted from full request data.
+ * Lists Clockwork requests via artisan tinker.
+ * Returns lightweight index entries - only extracts minimal fields to avoid memory issues.
  * @param projectPath - Path to Laravel project root
  * @param options - Execution options
+ * @param limit - Maximum number of requests to return (default 100)
  * @returns Array of index entries sorted by time (most recent first)
  */
 export function listRequestsViaArtisan(
   projectPath: string,
-  options: ArtisanOptions = {}
+  options: ArtisanOptions = {},
+  limit: number = 100
 ): IndexEntry[] {
-  const phpCode = `echo json_encode(array_map(fn($r) => $r->toArray(), app('clockwork')->storage()->all()));`;
-  const requests = executePhp<ClockworkRequest[]>(projectPath, phpCode, options) ?? [];
+  // Only extract index-level fields to avoid memory exhaustion
+  // Use array_slice to limit results
+  const phpCode = `echo json_encode(array_map(fn($r) => [
+    'id' => $r->id,
+    'time' => $r->time,
+    'type' => $r->type ?? 'request',
+    'method' => $r->method ?? null,
+    'uri' => $r->uri ?? null,
+    'controller' => $r->controller ?? null,
+    'responseStatus' => $r->responseStatus ?? null,
+    'responseDuration' => $r->responseDuration ?? null,
+    'commandName' => $r->commandName ?? null,
+  ], array_slice(app('clockwork')->storage()->all(), -${limit})));`;
 
-  // Map full requests to lightweight index entries
-  return requests
-    .map((r) => ({
-      id: r.id,
-      time: r.time,
-      type: r.type,
-      method: r.method,
-      uri: r.uri,
-      controller: r.controller,
-      responseStatus: r.responseStatus,
-      responseDuration: r.responseDuration,
-      commandName: r.commandName,
-    }))
-    .sort((a, b) => b.time - a.time);
+  const entries = executePhp<IndexEntry[]>(projectPath, phpCode, options) ?? [];
+
+  return entries.sort((a, b) => b.time - a.time);
 }
 
 /**
