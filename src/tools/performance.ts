@@ -90,10 +90,7 @@ export function getTimeline(storage: Storage, input: GetTimelineInput): Timeline
  * @param input - Two request IDs to compare
  * @returns Comparison showing differences in duration, queries, and memory
  */
-export function compareRequests(
-  storage: Storage,
-  input: CompareRequestsInput
-): RequestComparison {
+export function compareRequests(storage: Storage, input: CompareRequestsInput): RequestComparison {
   const req1 = storage.find(input.requestId1);
   const req2 = storage.find(input.requestId2);
 

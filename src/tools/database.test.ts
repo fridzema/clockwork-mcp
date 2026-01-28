@@ -68,7 +68,11 @@ describe('Database Tools', () => {
     });
 
     it('filters slow queries when threshold provided', () => {
-      const result = getQueries(getStorage(), { requestId: 'test-request', slow: true, threshold: 100 });
+      const result = getQueries(getStorage(), {
+        requestId: 'test-request',
+        slow: true,
+        threshold: 100,
+      });
       expect(result).toHaveLength(2);
     });
 

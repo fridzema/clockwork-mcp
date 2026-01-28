@@ -14,7 +14,10 @@ export interface XdebugProfileResult {
  * @param input - Request ID
  * @returns Stub result indicating feature is not available
  */
-export function getXdebugProfile(_storage: Storage, input: GetXdebugProfileInput): XdebugProfileResult {
+export function getXdebugProfile(
+  _storage: Storage,
+  input: GetXdebugProfileInput
+): XdebugProfileResult {
   return {
     available: false,
     message:

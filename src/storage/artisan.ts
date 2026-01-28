@@ -57,7 +57,9 @@ export function executePhp<T = unknown>(
 
   // Find JSON in output (tinker may output extra lines)
   const lines = output.trim().split('\n');
-  const jsonLine = lines.find((line) => line.startsWith('{') || line.startsWith('[') || line === 'null');
+  const jsonLine = lines.find(
+    (line) => line.startsWith('{') || line.startsWith('[') || line === 'null'
+  );
 
   if (!jsonLine) {
     throw new Error(`No JSON output from PHP execution. Output: ${output}`);

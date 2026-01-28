@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executePhp, getRequestViaArtisan, getLatestRequestViaArtisan, listRequestsViaArtisan, getRequestsViaArtisan } from './artisan.js';
+import {
+  executePhp,
+  getRequestViaArtisan,
+  getLatestRequestViaArtisan,
+  listRequestsViaArtisan,
+  getRequestsViaArtisan,
+} from './artisan.js';
 import { execSync } from 'child_process';
 
 vi.mock('child_process');
@@ -14,7 +20,10 @@ describe('Artisan Executor', () => {
       const mockExecSync = vi.mocked(execSync);
       mockExecSync.mockReturnValue('{"id":"abc123","type":"request"}');
 
-      const result = executePhp('/path/to/laravel', 'echo json_encode(["id" => "abc123", "type" => "request"]);');
+      const result = executePhp(
+        '/path/to/laravel',
+        'echo json_encode(["id" => "abc123", "type" => "request"]);'
+      );
 
       expect(mockExecSync).toHaveBeenCalledWith(
         expect.stringContaining('php artisan tinker'),
@@ -31,9 +40,7 @@ describe('Artisan Executor', () => {
         throw error;
       });
 
-      expect(() => executePhp('/path/to/laravel', 'echo 1;')).toThrow(
-        'PHP executable not found'
-      );
+      expect(() => executePhp('/path/to/laravel', 'echo 1;')).toThrow('PHP executable not found');
     });
 
     it('throws descriptive error when artisan is not found', () => {
@@ -42,9 +49,7 @@ describe('Artisan Executor', () => {
         throw new Error('Could not open input file: artisan');
       });
 
-      expect(() => executePhp('/path/to/laravel', 'echo 1;')).toThrow(
-        'Laravel artisan not found'
-      );
+      expect(() => executePhp('/path/to/laravel', 'echo 1;')).toThrow('Laravel artisan not found');
     });
 
     it('throws descriptive error when Clockwork is not installed', () => {
@@ -60,9 +65,7 @@ describe('Artisan Executor', () => {
       const mockExecSync = vi.mocked(execSync);
       mockExecSync.mockReturnValue('not json');
 
-      expect(() => executePhp('/path/to/laravel', 'echo "not json";')).toThrow(
-        'No JSON output'
-      );
+      expect(() => executePhp('/path/to/laravel', 'echo "not json";')).toThrow('No JSON output');
     });
   });
 });
@@ -142,7 +145,15 @@ describe('Clockwork Storage Functions', () => {
     it('fetches recent requests using previous() to avoid OOM on SQL storage', () => {
       const mockExecSync = vi.mocked(execSync);
       const mockRequests = [
-        { id: 'req1', type: 'request', time: 1705312999, method: 'GET', uri: '/api/users', responseStatus: 200, responseDuration: 45.5 },
+        {
+          id: 'req1',
+          type: 'request',
+          time: 1705312999,
+          method: 'GET',
+          uri: '/api/users',
+          responseStatus: 200,
+          responseDuration: 45.5,
+        },
         { id: 'req2', type: 'command', time: 1705312000, commandName: 'migrate' },
       ];
       mockExecSync.mockReturnValue(JSON.stringify(mockRequests));
@@ -186,10 +197,9 @@ describe('Clockwork Storage Functions', () => {
 
     it('filters out null results for missing requests', () => {
       const mockExecSync = vi.mocked(execSync);
-      mockExecSync.mockReturnValue(JSON.stringify([
-        { id: 'req1', type: 'request', time: 1705312999 },
-        null,
-      ]));
+      mockExecSync.mockReturnValue(
+        JSON.stringify([{ id: 'req1', type: 'request', time: 1705312999 }, null])
+      );
 
       const result = getRequestsViaArtisan('/path/to/laravel', ['req1', 'nonexistent']);
 

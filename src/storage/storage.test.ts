@@ -75,7 +75,11 @@ describe('Unified Storage', () => {
 
       const result = storage.findMany(['req1', 'req2']);
 
-      expect(artisan.getRequestsViaArtisan).toHaveBeenCalledWith('/path/to/laravel', ['req1', 'req2'], {});
+      expect(artisan.getRequestsViaArtisan).toHaveBeenCalledWith(
+        '/path/to/laravel',
+        ['req1', 'req2'],
+        {}
+      );
       expect(result).toEqual(mockRequests);
     });
 
@@ -116,7 +120,10 @@ describe('Unified Storage', () => {
     });
 
     it('routes latest() to file-based implementation', () => {
-      const mockEntries = [{ id: 'req1', time: 999 }, { id: 'req2', time: 123 }];
+      const mockEntries = [
+        { id: 'req1', time: 999 },
+        { id: 'req2', time: 123 },
+      ];
       const mockRequest = { id: 'req1', type: 'request', time: 999 };
       vi.mocked(indexParser.parseIndex).mockReturnValue(mockEntries as any);
       vi.mocked(reader.readRequest).mockReturnValue(mockRequest as any);
@@ -146,7 +153,10 @@ describe('Unified Storage', () => {
 
       const result = storage.findMany(['req1', 'req2']);
 
-      expect(reader.readRequests).toHaveBeenCalledWith('/path/to/storage/clockwork', ['req1', 'req2']);
+      expect(reader.readRequests).toHaveBeenCalledWith('/path/to/storage/clockwork', [
+        'req1',
+        'req2',
+      ]);
       expect(result).toEqual(mockRequests);
     });
 

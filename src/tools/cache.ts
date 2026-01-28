@@ -22,10 +22,7 @@ export interface CacheStats {
  * @param input - Request ID
  * @returns Array of cache operations
  */
-export function getCacheOperations(
-  storage: Storage,
-  input: GetCacheOperationsInput
-): CacheQuery[] {
+export function getCacheOperations(storage: Storage, input: GetCacheOperationsInput): CacheQuery[] {
   const request = storage.find(input.requestId);
 
   if (!request?.cacheQueries) {
@@ -106,10 +103,7 @@ export function getCacheStats(storage: Storage, input: GetCacheStatsInput): Cach
  * @param input - Request ID
  * @returns Array of Redis commands
  */
-export function getRedisCommands(
-  storage: Storage,
-  input: GetRedisCommandsInput
-): RedisCommand[] {
+export function getRedisCommands(storage: Storage, input: GetRedisCommandsInput): RedisCommand[] {
   const request = storage.find(input.requestId);
 
   if (!request?.redisCommands) {

@@ -157,7 +157,10 @@ export const getXdebugHotspotsSchema = z.object({
 export const listQueueJobsSchema = z.object({
   queue: z.string().optional().describe('Filter by queue name'),
   job: z.string().optional().describe('Filter by job class name'),
-  status: z.enum(['pending', 'processing', 'completed', 'failed']).optional().describe('Filter by job status'),
+  status: z
+    .enum(['pending', 'processing', 'completed', 'failed'])
+    .optional()
+    .describe('Filter by job status'),
   ...timeRangeSchema.shape,
   ...paginationSchema.shape,
 });

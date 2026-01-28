@@ -39,8 +39,10 @@ export function createStorage(options: StorageOptions): Storage {
     };
 
     return {
-      find: (requestId) => artisan.getRequestViaArtisan(options.projectPath!, requestId, artisanOpts),
-      findMany: (requestIds) => artisan.getRequestsViaArtisan(options.projectPath!, requestIds, artisanOpts),
+      find: (requestId) =>
+        artisan.getRequestViaArtisan(options.projectPath!, requestId, artisanOpts),
+      findMany: (requestIds) =>
+        artisan.getRequestsViaArtisan(options.projectPath!, requestIds, artisanOpts),
       latest: () => artisan.getLatestRequestViaArtisan(options.projectPath!, artisanOpts),
       list: () => artisan.listRequestsViaArtisan(options.projectPath!, artisanOpts),
     };

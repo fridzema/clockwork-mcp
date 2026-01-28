@@ -62,10 +62,7 @@ export function createServer() {
     'List recent Clockwork requests with optional filtering',
     schemas.listRequestsSchema.shape,
     async (input) => {
-      const result = requestTools.listRequests(
-        getStorage(),
-        input as schemas.ListRequestsInput
-      );
+      const result = requestTools.listRequests(getStorage(), input as schemas.ListRequestsInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -174,10 +171,7 @@ export function createServer() {
     'Compare two requests side by side',
     schemas.compareRequestsSchema.shape,
     async (input) => {
-      const result = perfTools.compareRequests(
-        getStorage(),
-        input as schemas.CompareRequestsInput
-      );
+      const result = perfTools.compareRequests(getStorage(), input as schemas.CompareRequestsInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );
@@ -201,10 +195,7 @@ export function createServer() {
     'Get cache statistics (hit ratio, totals)',
     schemas.getCacheStatsSchema.shape,
     async (input) => {
-      const result = cacheTools.getCacheStats(
-        getStorage(),
-        input as schemas.GetCacheStatsInput
-      );
+      const result = cacheTools.getCacheStats(getStorage(), input as schemas.GetCacheStatsInput);
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );

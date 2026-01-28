@@ -35,7 +35,12 @@ export function detectMemoryIssues(
   const thresholdBytes = thresholdMB * 1024 * 1024;
 
   const issues: MemoryIssue[] = [];
-  const memoryValues: Array<{ requestId: string; uri: string | null; memoryMB: number; time: number }> = [];
+  const memoryValues: Array<{
+    requestId: string;
+    uri: string | null;
+    memoryMB: number;
+    time: number;
+  }> = [];
 
   // Collect memory data and detect high usage
   for (const request of requests) {
