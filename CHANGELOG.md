@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-01-28
+
+### Added
+- **Traces & Execution Flow:** `get_call_graph`, `get_query_stack_trace`, `get_log_stack_trace`
+- **Profiling stubs:** `get_xdebug_profile`, `get_xdebug_hotspots` (prepared for future Xdebug integration)
+- **Queue Jobs:** `list_queue_jobs`, `get_queue_job`
+- **Test Execution:** `list_tests`, `get_test`
+- **Context tools:** `get_auth_user`, `get_session_data`, `get_middleware_chain`, `get_route_details`
+- **Analysis tools:** `analyze_exceptions`, `analyze_route_performance`, `detect_memory_issues`
+- Exception grouping by normalized message pattern
+- Route performance percentile statistics (p50/p95/p99)
+- Memory issue detection with growth pattern analysis
+
 ## [0.3.0] - 2026-01-20
 
 ### Added

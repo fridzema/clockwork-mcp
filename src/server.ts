@@ -11,6 +11,11 @@ import * as cacheTools from './tools/cache.js';
 import * as contextTools from './tools/context.js';
 import * as cmdTools from './tools/commands.js';
 import * as utilTools from './tools/utility.js';
+import * as traceTools from './tools/traces.js';
+import * as profilingTools from './tools/profiling.js';
+import * as queueTools from './tools/queue.js';
+import * as testTools from './tools/tests.js';
+import * as analysisTools from './tools/analysis.js';
 import * as schemas from './types/tools.js';
 
 /**
@@ -299,6 +304,202 @@ export function createServer() {
     { requestId: z.string().describe('Clockwork request ID') },
     async ({ requestId }) => {
       const result = utilTools.explainRequestFlow(getStorage(), requestId);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // Call graph & stack trace tools
+  server.tool(
+    'get_call_graph',
+    'Build hierarchical execution tree from timeline events',
+    schemas.getCallGraphSchema.shape,
+    async (input) => {
+      const result = traceTools.getCallGraph(getStorage(), input as schemas.GetCallGraphInput);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_query_stack_trace',
+    'Get source location for a database query',
+    schemas.getQueryStackTraceSchema.shape,
+    async (input) => {
+      const result = traceTools.getQueryStackTrace(
+        getStorage(),
+        input as schemas.GetQueryStackTraceInput
+      );
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_log_stack_trace',
+    'Get source location for a log entry',
+    schemas.getLogStackTraceSchema.shape,
+    async (input) => {
+      const result = traceTools.getLogStackTrace(
+        getStorage(),
+        input as schemas.GetLogStackTraceInput
+      );
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // Xdebug profiling tools (stubs)
+  server.tool(
+    'get_xdebug_profile',
+    'Get Xdebug profiling data for a request (stub - not available in Clockwork)',
+    schemas.getXdebugProfileSchema.shape,
+    async (input) => {
+      const result = profilingTools.getXdebugProfile(
+        getStorage(),
+        input as schemas.GetXdebugProfileInput
+      );
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_xdebug_hotspots',
+    'Get Xdebug hotspots for a request (stub - not available in Clockwork)',
+    schemas.getXdebugHotspotsSchema.shape,
+    async (input) => {
+      const result = profilingTools.getXdebugHotspots(
+        getStorage(),
+        input as schemas.GetXdebugHotspotsInput
+      );
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // Queue job tools
+  server.tool(
+    'list_queue_jobs',
+    'List queue jobs with optional filtering',
+    schemas.listQueueJobsSchema.shape,
+    async (input) => {
+      const result = queueTools.listQueueJobs(getStorage(), input as schemas.ListQueueJobsInput);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_queue_job',
+    'Get full details of a queue job',
+    schemas.getQueueJobSchema.shape,
+    async (input) => {
+      const result = queueTools.getQueueJob(getStorage(), input as schemas.GetQueueJobInput);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // Test tools
+  server.tool(
+    'list_tests',
+    'List test executions with optional filtering',
+    schemas.listTestsSchema.shape,
+    async (input) => {
+      const result = testTools.listTests(getStorage(), input as schemas.ListTestsInput);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_test',
+    'Get full details of a test execution',
+    schemas.getTestSchema.shape,
+    async (input) => {
+      const result = testTools.getTest(getStorage(), input as schemas.GetTestInput);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // Context tools
+  server.tool(
+    'get_auth_user',
+    'Get authenticated user for a request',
+    schemas.getAuthUserSchema.shape,
+    async (input) => {
+      const result = contextTools.getAuthUser(getStorage(), input as schemas.GetAuthUserInput);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_session_data',
+    'Get session data for a request',
+    schemas.getSessionDataSchema.shape,
+    async (input) => {
+      const result = contextTools.getSessionData(
+        getStorage(),
+        input as schemas.GetSessionDataInput
+      );
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_middleware_chain',
+    'Get middleware chain for a request',
+    schemas.getMiddlewareChainSchema.shape,
+    async (input) => {
+      const result = contextTools.getMiddlewareChain(
+        getStorage(),
+        input as schemas.GetMiddlewareChainInput
+      );
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'get_route_details',
+    'Get route details for a request',
+    schemas.getRouteDetailsSchema.shape,
+    async (input) => {
+      const result = contextTools.getRouteDetails(
+        getStorage(),
+        input as schemas.GetRouteDetailsInput
+      );
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // Analysis tools
+  server.tool(
+    'analyze_exceptions',
+    'Analyze exceptions across requests, grouping by message pattern',
+    schemas.analyzeExceptionsSchema.shape,
+    async (input) => {
+      const result = analysisTools.analyzeExceptions(
+        getStorage(),
+        input as schemas.AnalyzeExceptionsInput
+      );
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'analyze_route_performance',
+    'Analyze route performance with percentile statistics',
+    schemas.analyzeRoutePerformanceSchema.shape,
+    async (input) => {
+      const result = analysisTools.analyzeRoutePerformance(
+        getStorage(),
+        input as schemas.AnalyzeRoutePerformanceInput
+      );
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    'detect_memory_issues',
+    'Detect high memory usage and growth patterns',
+    schemas.detectMemoryIssuesSchema.shape,
+    async (input) => {
+      const result = analysisTools.detectMemoryIssues(
+        getStorage(),
+        input as schemas.DetectMemoryIssuesInput
+      );
       return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
     }
   );

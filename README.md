@@ -121,6 +121,31 @@ Claude will:
 - "Show the full request timeline"
 - "What views were rendered?"
 
+**Exception & Error Analysis:**
+- "Show me exception patterns from the last hour"
+- "What errors have been occurring?"
+- "Group recent exceptions by type"
+
+**Route Performance:**
+- "Which routes are slowest? Show p95 response times"
+- "Analyze route performance for the past day"
+- "Compare response times across endpoints"
+
+**Memory Issues:**
+- "Are there any memory issues?"
+- "Detect memory leaks or growth patterns"
+- "Which requests are using the most memory?"
+
+**Queue Jobs:**
+- "List failed queue jobs"
+- "Show me recent job executions"
+- "What jobs are pending?"
+
+**Test Execution:**
+- "List recent test runs"
+- "Show failed tests"
+- "What tests are being skipped?"
+
 ## Tools
 
 ### Request Discovery
@@ -166,6 +191,46 @@ Claude will:
 |------|-------------|
 | `list_commands` | List profiled command executions |
 | `get_command` | Full command execution details |
+
+### Traces & Execution Flow
+| Tool | Description |
+|------|-------------|
+| `get_call_graph` | Hierarchical execution tree from timeline events |
+| `get_query_stack_trace` | Source location for a database query |
+| `get_log_stack_trace` | Source location for a log entry |
+
+### Profiling (Xdebug)
+| Tool | Description |
+|------|-------------|
+| `get_xdebug_profile` | Xdebug profiling data (stub) |
+| `get_xdebug_hotspots` | Xdebug hotspots (stub) |
+
+### Queue Jobs
+| Tool | Description |
+|------|-------------|
+| `list_queue_jobs` | List queue jobs with filtering |
+| `get_queue_job` | Full queue job details |
+
+### Test Execution
+| Tool | Description |
+|------|-------------|
+| `list_tests` | List test executions with filtering |
+| `get_test` | Full test execution details |
+
+### Request Context
+| Tool | Description |
+|------|-------------|
+| `get_auth_user` | Authenticated user for a request |
+| `get_session_data` | Session data for a request |
+| `get_middleware_chain` | Middleware chain for a request |
+| `get_route_details` | Route details for a request |
+
+### Multi-Request Analysis
+| Tool | Description |
+|------|-------------|
+| `analyze_exceptions` | Group exceptions by message pattern |
+| `analyze_route_performance` | Route performance with percentiles (p50/p95/p99) |
+| `detect_memory_issues` | Detect high memory usage and growth patterns |
 
 ### Utility
 | Tool | Description |
