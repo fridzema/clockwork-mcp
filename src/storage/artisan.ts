@@ -1,9 +1,98 @@
 import { execSync } from 'child_process';
-import type { ClockworkRequest, IndexEntry } from '../types/clockwork.js';
+import type { ClockworkRequest, IndexEntry, RequestType } from '../types/clockwork.js';
 
 export interface ArtisanOptions {
   phpPath?: string;
   timeout?: number;
+}
+
+/**
+ * Detects if Clockwork uses SQLite storage and returns the database path.
+ * @param projectPath - Path to Laravel project root
+ * @param options - Execution options
+ * @returns SQLite database path or null if not using SQLite
+ */
+export function detectSqliteStorage(
+  projectPath: string,
+  options: ArtisanOptions = {}
+): string | null {
+  try {
+    const phpCode = `
+      $storage = config('clockwork.storage');
+      $path = config('clockwork.storage_sql_database');
+      if ($storage === 'sql' && $path && str_ends_with($path, '.sqlite')) {
+        echo json_encode($path);
+      } else {
+        echo json_encode(null);
+      }
+    `;
+    const result = executePhp<string | null>(projectPath, phpCode, options);
+    return result && result.endsWith('.sqlite') ? result : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Lists Clockwork requests by querying SQLite directly (avoids OOM from hydrating full objects).
+ * @param dbPath - Path to SQLite database file
+ * @param limit - Maximum number of requests to return
+ * @param timeout - Command timeout in milliseconds
+ * @returns Array of index entries sorted by time (most recent first)
+ */
+export function listRequestsViaSqlite(
+  dbPath: string,
+  limit: number = 100,
+  timeout: number = 30000
+): IndexEntry[] {
+  // Query only the columns needed for IndexEntry to avoid loading full request payloads
+  const columns =
+    'id, time, type, method, uri, controller, responseStatus, responseDuration, commandName';
+  const query = `SELECT ${columns} FROM clockwork ORDER BY time DESC LIMIT ${limit}`;
+
+  // Use -json output mode for reliable parsing
+  const command = `sqlite3 -json "${dbPath}" "${query}"`;
+
+  let output: string;
+  try {
+    output = execSync(command, {
+      timeout,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch {
+    throw new Error(`SQLite query failed for ${dbPath}`);
+  }
+
+  const trimmed = output.trim();
+  if (!trimmed || trimmed === '[]') {
+    return [];
+  }
+
+  // Parse JSON output from sqlite3 -json
+  const rows = JSON.parse(trimmed) as Array<{
+    id: string;
+    time: number;
+    type: string;
+    method: string | null;
+    uri: string | null;
+    controller: string | null;
+    responseStatus: number | null;
+    responseDuration: number | null;
+    commandName: string | null;
+  }>;
+
+  return rows.map((row) => ({
+    id: row.id,
+    time: row.time,
+    type: (row.type || 'request') as RequestType,
+    method: row.method ?? undefined,
+    uri: row.uri ?? undefined,
+    controller: row.controller ?? undefined,
+    responseStatus: row.responseStatus ?? undefined,
+    responseDuration: row.responseDuration ?? undefined,
+    commandName: row.commandName ?? undefined,
+  }));
 }
 
 /**
@@ -58,7 +147,8 @@ export function executePhp<T = unknown>(
   // Find JSON in output (tinker may output extra lines)
   const lines = output.trim().split('\n');
   const jsonLine = lines.find(
-    (line) => line.startsWith('{') || line.startsWith('[') || line === 'null'
+    (line) =>
+      line.startsWith('{') || line.startsWith('[') || line.startsWith('"') || line === 'null'
   );
 
   if (!jsonLine) {
@@ -99,9 +189,8 @@ export function getLatestRequestViaArtisan(
 }
 
 /**
- * Lists Clockwork requests via artisan tinker.
- * Returns lightweight index entries - only extracts minimal fields to avoid memory issues.
- * Uses previous() instead of all() to avoid loading all requests into memory (SQL storage OOM).
+ * Lists Clockwork requests.
+ * Tries direct SQLite query first (fast, avoids OOM), falls back to PHP for non-SQLite storage.
  * @param projectPath - Path to Laravel project root
  * @param options - Execution options
  * @param limit - Maximum number of requests to return (default 100)
@@ -112,8 +201,18 @@ export function listRequestsViaArtisan(
   options: ArtisanOptions = {},
   limit: number = 100
 ): IndexEntry[] {
-  // Use previous() instead of all() - all() causes OOM on SQL storage by loading everything
-  // previous() uses SQL LIMIT under the hood and is much more efficient
+  // Try direct SQLite path first - avoids OOM by querying only metadata columns
+  const sqlitePath = detectSqliteStorage(projectPath, options);
+  if (sqlitePath) {
+    try {
+      return listRequestsViaSqlite(sqlitePath, limit, options.timeout);
+    } catch {
+      // Fall through to PHP method
+    }
+  }
+
+  // Fallback to PHP method (for non-SQLite storage or if SQLite query fails)
+  // Uses previous() instead of all() - all() causes OOM on SQL storage by loading everything
   const phpCode = `$s = app("clockwork")->storage(); $l = $s->latest(); if (!$l) { echo "[]"; } else { $p = $s->previous($l->id, ${limit - 1}); array_unshift($p, $l); echo json_encode(array_map(fn($r) => ["id" => $r->id, "time" => $r->time, "type" => $r->type ?? "request", "method" => $r->method ?? null, "uri" => $r->uri ?? null, "controller" => $r->controller ?? null, "responseStatus" => $r->responseStatus ?? null, "responseDuration" => $r->responseDuration ?? null, "commandName" => $r->commandName ?? null], $p)); }`;
 
   const entries = executePhp<IndexEntry[]>(projectPath, phpCode, options) ?? [];
