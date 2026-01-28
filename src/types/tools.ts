@@ -127,6 +127,94 @@ export const getCommandSchema = z.object({
   requestId: requestIdSchema,
 });
 
+// Call graph & stack trace schemas
+export const getCallGraphSchema = z.object({
+  requestId: requestIdSchema,
+  minDuration: z.number().optional().describe('Minimum duration in ms to include in graph'),
+});
+
+export const getQueryStackTraceSchema = z.object({
+  requestId: requestIdSchema,
+  queryIndex: z.number().describe('0-based index of the query'),
+});
+
+export const getLogStackTraceSchema = z.object({
+  requestId: requestIdSchema,
+  logIndex: z.number().describe('0-based index of the log entry'),
+});
+
+// Xdebug profiling schemas (stubs)
+export const getXdebugProfileSchema = z.object({
+  requestId: requestIdSchema,
+});
+
+export const getXdebugHotspotsSchema = z.object({
+  requestId: requestIdSchema,
+  limit: z.number().default(10).describe('Max hotspots to return'),
+});
+
+// Queue job schemas
+export const listQueueJobsSchema = z.object({
+  queue: z.string().optional().describe('Filter by queue name'),
+  job: z.string().optional().describe('Filter by job class name'),
+  status: z.enum(['pending', 'processing', 'completed', 'failed']).optional().describe('Filter by job status'),
+  ...timeRangeSchema.shape,
+  ...paginationSchema.shape,
+});
+
+export const getQueueJobSchema = z.object({
+  requestId: requestIdSchema,
+});
+
+// Test schemas
+export const listTestsSchema = z.object({
+  name: z.string().optional().describe('Filter by test name'),
+  status: z.enum(['passed', 'failed', 'skipped']).optional().describe('Filter by test status'),
+  ...timeRangeSchema.shape,
+  ...paginationSchema.shape,
+});
+
+export const getTestSchema = z.object({
+  requestId: requestIdSchema,
+});
+
+// Context schemas
+export const getAuthUserSchema = z.object({
+  requestId: requestIdSchema,
+});
+
+export const getSessionDataSchema = z.object({
+  requestId: requestIdSchema,
+  keys: z.array(z.string()).optional().describe('Specific session keys to retrieve'),
+});
+
+export const getMiddlewareChainSchema = z.object({
+  requestId: requestIdSchema,
+});
+
+export const getRouteDetailsSchema = z.object({
+  requestId: requestIdSchema,
+});
+
+// Analysis schemas
+export const analyzeExceptionsSchema = z.object({
+  ...requestScopeSchema.shape,
+  groupByMessage: z.boolean().default(true).describe('Group exceptions by normalized message'),
+  limit: z.number().default(20).describe('Max exception groups to return'),
+});
+
+export const analyzeRoutePerformanceSchema = z.object({
+  ...requestScopeSchema.shape,
+  groupBy: z.enum(['uri', 'route', 'controller']).default('uri').describe('How to group routes'),
+  minSamples: z.number().default(1).describe('Minimum samples required for a route'),
+});
+
+export const detectMemoryIssuesSchema = z.object({
+  ...requestScopeSchema.shape,
+  thresholdMB: z.number().default(128).describe('Memory threshold in MB to flag as high'),
+  detectGrowth: z.boolean().default(true).describe('Detect memory growth patterns'),
+});
+
 // Export all schema types - use z.input to get the input type (with optional defaults)
 export type RequestScopeInput = z.input<typeof requestScopeSchema>;
 export type ListRequestsInput = z.input<typeof listRequestsSchema>;
@@ -147,3 +235,19 @@ export type GetViewsInput = z.input<typeof getViewsSchema>;
 export type GetHttpRequestsInput = z.input<typeof getHttpRequestsSchema>;
 export type ListCommandsInput = z.input<typeof listCommandsSchema>;
 export type GetCommandInput = z.input<typeof getCommandSchema>;
+export type GetCallGraphInput = z.input<typeof getCallGraphSchema>;
+export type GetQueryStackTraceInput = z.input<typeof getQueryStackTraceSchema>;
+export type GetLogStackTraceInput = z.input<typeof getLogStackTraceSchema>;
+export type GetXdebugProfileInput = z.input<typeof getXdebugProfileSchema>;
+export type GetXdebugHotspotsInput = z.input<typeof getXdebugHotspotsSchema>;
+export type ListQueueJobsInput = z.input<typeof listQueueJobsSchema>;
+export type GetQueueJobInput = z.input<typeof getQueueJobSchema>;
+export type ListTestsInput = z.input<typeof listTestsSchema>;
+export type GetTestInput = z.input<typeof getTestSchema>;
+export type GetAuthUserInput = z.input<typeof getAuthUserSchema>;
+export type GetSessionDataInput = z.input<typeof getSessionDataSchema>;
+export type GetMiddlewareChainInput = z.input<typeof getMiddlewareChainSchema>;
+export type GetRouteDetailsInput = z.input<typeof getRouteDetailsSchema>;
+export type AnalyzeExceptionsInput = z.input<typeof analyzeExceptionsSchema>;
+export type AnalyzeRoutePerformanceInput = z.input<typeof analyzeRoutePerformanceSchema>;
+export type DetectMemoryIssuesInput = z.input<typeof detectMemoryIssuesSchema>;

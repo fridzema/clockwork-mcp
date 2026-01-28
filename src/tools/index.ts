@@ -5,3 +5,8 @@ export * from './cache.js';
 export * from './context.js';
 export * from './commands.js';
 export * from './utility.js';
+export * from './traces.js';
+export * from './profiling.js';
+export * from './queue.js';
+export * from './tests.js';
+export * from './analysis.js';
