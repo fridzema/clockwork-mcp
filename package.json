@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepublishOnly": "npm run build"
+    "sync-version": "node scripts/sync-version.js",
+    "prepublishOnly": "npm run sync-version && npm run build"
   },
   "keywords": [
     "mcp",
